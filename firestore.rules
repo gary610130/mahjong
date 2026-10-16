@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 只開放「某個房間底下的牌局」，而且房間碼要夠長
+    // 沒有開放列出所有房間，所以不知道房間碼就找不到資料
+    match /rooms/{room}/games/{game} {
+      allow read, write: if room.size() >= 20 && room.size() <= 64;
+    }
+  }
+}

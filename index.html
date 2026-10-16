@@ -1,0 +1,1365 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>麻將帳本</title>
+<meta name="theme-color" content="#2d5a47">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="麻將帳本">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<style>
+/* 版面：上方分頁列；牌局頁左邊是牌桌（四家圍著中間的圈局資訊），右邊是記一把的面板，手機時上下排 */
+:root {
+  --bg: #e9eee8;
+  --surface: #fbfcf9;
+  --felt: #2d5a47;
+  --felt-ink: #f1efe4;
+  --ink: #1b2420;
+  --muted: #5b6862;
+  --line: #d0d9d1;
+  --red: #b5312a;
+  --gain: #1c7449;
+  --loss: #b23a2e;
+  --pick-bg: #2d5a47;
+  --pick-ink: #f1efe4;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948; --s-other: #9aa49f;
+  --font-display: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111714; --surface: #19211d; --felt: #1d3b2f; --felt-ink: #e9e7dc;
+    --ink: #e5eae6; --muted: #97a39d; --line: #2c3833; --red: #e46a5e;
+    --gain: #5cc28c; --loss: #f07d71; --pick-bg: #4f9d76; --pick-ink: #0d1411;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767; --s-other: #6c7771;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111714; --surface: #19211d; --felt: #1d3b2f; --felt-ink: #e9e7dc;
+  --ink: #e5eae6; --muted: #97a39d; --line: #2c3833; --red: #e46a5e;
+  --gain: #5cc28c; --loss: #f07d71; --pick-bg: #4f9d76; --pick-ink: #0d1411;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767; --s-other: #6c7771;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--ink); }
+:root { padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font-family: var(--font-body); font-size: 15px; line-height: 1.55; -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+* { box-sizing: border-box; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.bar-in, .wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.bar-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-block: 10px; }
+.brand { font-family: var(--font-display); font-weight: 900; font-size: 1.35rem; letter-spacing: 0.04em; display: flex; align-items: center; gap: 10px; }
+.sync { font-family: var(--font-body); font-weight: 500; font-size: 0.72rem; letter-spacing: 0.02em; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; min-width: 15rem; }
+.tabs button { border: 0; background: transparent; padding: 6px 16px; border-radius: 9px; font-weight: 500; color: var(--muted); }
+.tabs button[aria-current="page"] { background: var(--felt); color: var(--felt-ink); }
+@media (max-width: 520px) {
+  .bar-in { padding-block: 8px; gap: 8px; }
+  .brand { font-size: 1.15rem; }
+  .tabs { flex: 1 1 100%; }
+}
+
+.wrap { padding-block: 18px 40px; display: grid; gap: 18px; }
+.notice { background: var(--surface); border: 1px solid var(--red); color: var(--ink); border-radius: var(--radius); padding: 10px 14px; font-size: 0.9rem; }
+.empty { color: var(--muted); text-align: center; padding: 40px 0; }
+h2 { font-family: var(--font-display); font-size: 1.15rem; margin: 0; text-wrap: balance; }
+h3 { font-size: 0.95rem; margin: 0; }
+.label { font-size: 0.78rem; letter-spacing: 0.08em; color: var(--muted); font-weight: 500; }
+.num { font-variant-numeric: tabular-nums; }
+.gain { color: var(--gain); }
+.loss { color: var(--loss); }
+
+.play { display: grid; gap: 18px; }
+@media (min-width: 820px) { .play { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; } }
+.table-col { display: grid; gap: 10px; min-width: 0; }
+
+/* 狀態列：這一局在哪、誰當莊、打了多久 */
+.state { background: var(--felt); color: var(--felt-ink); border-radius: 16px; padding: 12px 16px; display: grid; gap: 2px; }
+.state-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.state-round { font-family: var(--font-display); font-weight: 900; font-size: 1.6rem; letter-spacing: 0.08em; line-height: 1.25; }
+.state-no { font-size: 0.85rem; font-weight: 500; }
+.state-sub { font-size: 0.84rem; color: var(--felt-ink); }
+
+/* 四家：固定照出牌順序繞一圈（左上→右上→右下→左下），點卡片選人 */
+.seats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "s0 s1" "s3 s2"; gap: 10px; }
+.seat { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px 12px; text-align: left; display: grid; gap: 1px; min-width: 0; font: inherit; color: inherit; }
+.seat.dealer { border: 2px solid var(--red); padding: 9px 11px 11px; }
+.seat.pick-win { background: var(--pick-bg); color: var(--pick-ink); border-color: var(--pick-bg); }
+.seat.pick-lose { outline: 3px solid var(--loss); outline-offset: -3px; }
+.seat:disabled { cursor: default; }
+.seat-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.wind { font-family: var(--font-display); font-weight: 900; font-size: 1.05rem; flex: none; }
+.seat-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.badge { margin-left: auto; flex: none; background: var(--red); color: #fff; border-radius: 6px; padding: 0 6px; font-size: 0.72rem; font-weight: 700; }
+.tag { margin-left: auto; flex: none; border-radius: 6px; padding: 0 6px; font-size: 0.72rem; font-weight: 700; background: var(--pick-ink); color: var(--pick-bg); }
+.tag.lose { background: var(--loss); color: #fff; }
+.seat-mate { font-size: 0.74rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat-net { font-family: var(--font-display); font-weight: 900; font-size: 1.7rem; line-height: 1.2; margin-top: 2px; }
+.seat-chips { font-size: 0.74rem; color: var(--muted); }
+.seat.pick-win .seat-mate, .seat.pick-win .seat-chips, .seat.pick-win .seat-net { color: var(--pick-ink); }
+.zero { color: var(--muted); }
+.links { display: flex; justify-content: flex-end; gap: 4px; }
+.link { border: 0; background: transparent; color: var(--muted); font-size: 0.85rem; padding: 4px 8px; text-decoration: underline; text-underline-offset: 3px; }
+.meta-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.92rem; }
+.meta-row .link { padding-right: 0; }
+.picked { font-size: 0.95rem; font-weight: 700; min-height: 1.5em; }
+.picked .hint { font-weight: 400; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.panel.editing { border: 2px solid var(--red); }
+.field { display: grid; gap: 6px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--bg); border-radius: 10px; padding: 3px; }
+.seg button { border: 0; background: transparent; padding: 8px 4px; border-radius: 8px; font-weight: 500; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+.chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.chips.free { display: flex; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--felt); color: var(--felt-ink); border-color: var(--felt); }
+.chip:disabled { opacity: 0.35; cursor: default; }
+.stepper { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stepper .round { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); font-size: 1.3rem; }
+.tai { font-family: var(--font-display); font-weight: 900; font-size: 1.9rem; min-width: 2.4ch; text-align: center; }
+.quick { display: flex; gap: 4px; flex-wrap: wrap; }
+.quick button { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; min-width: 38px; height: 36px; font-size: 0.9rem; }
+.preview { background: var(--bg); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: 0.9rem; }
+.pay { display: flex; justify-content: space-between; gap: 10px; }
+.pay small { color: var(--muted); display: block; font-size: 0.76rem; }
+.primary { border: 0; background: var(--red); color: #fff; border-radius: 12px; padding: 13px; font-weight: 700; font-size: 1rem; }
+.primary:disabled { opacity: 0.4; cursor: default; }
+.ghost { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 14px; font-weight: 500; }
+.ghost.small { padding: 3px 10px; font-size: 0.8rem; }
+.ghost.warn { color: var(--loss); border-color: var(--loss); }
+.ghost.armed { background: var(--loss); color: var(--surface); }
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.flash { color: var(--gain); font-size: 0.88rem; font-weight: 500; }
+
+.seat-edit { display: grid; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+.seat-edit:first-of-type { border-top: 0; }
+
+.scroll { overflow-x: auto; }
+table.grid { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.grid th, .grid td { padding: 8px 6px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.grid th:first-child, .grid td:first-child { text-align: left; }
+.grid th { font-weight: 500; color: var(--muted); font-size: 0.78rem; letter-spacing: 0.06em; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+
+.hands { list-style: none; margin: 0; padding: 0; display: grid; }
+.hand { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.hand.current { background: var(--bg); }
+.hand-no { font-family: var(--font-display); font-weight: 900; color: var(--muted); }
+.hand-what { font-weight: 700; }
+.hand-meta { font-size: 0.78rem; color: var(--muted); }
+.hand-deltas { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.85rem; }
+.marker { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+
+.board { display: grid; }
+.lead-item { border-bottom: 1px solid var(--line); }
+.lead-item:last-child { border-bottom: 0; }
+.lead { width: 100%; display: grid; grid-template-columns: 1.2rem minmax(3rem, 4.8rem) minmax(0, 1fr) 4.8rem; align-items: center; gap: 10px;
+  padding: 8px 0; border: 0; background: transparent; text-align: left; font-size: 0.95rem; }
+.lead-rank { color: var(--muted); font-size: 0.85rem; }
+.lead-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spark { width: 100%; height: 36px; display: block; }
+.spark-zero { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.lead-amt { text-align: right; font-weight: 700; }
+.lead-item.open .lead { padding-bottom: 4px; }
+.lead-detail { display: grid; gap: 8px; padding: 0 0 12px; }
+
+.heat-wrap { margin-inline: -4px; }
+table.heat { border-collapse: separate; border-spacing: 3px; font-size: 0.88rem; }
+.heat th, .heat td { padding: 6px 8px; white-space: nowrap; text-align: right; border-radius: 6px; }
+.heat thead th { font-weight: 500; color: var(--muted); font-size: 0.78rem; }
+.heat .heat-name { position: sticky; left: 0; z-index: 1; background: var(--surface); text-align: left; font-weight: 700; color: var(--ink); }
+.heat thead .heat-name { color: var(--muted); font-weight: 500; }
+.heat-total { font-weight: 700; }
+.heat-none { color: var(--muted); text-align: center; }
+
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.filters .field { flex: 1 1 9rem; min-width: 0; }
+
+.chart { position: relative; display: grid; gap: 8px; }
+.chart svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
+.chart .axis { fill: var(--muted); font-size: 12px; font-family: var(--font-body); }
+.chart .grid-line { stroke: var(--line); stroke-width: 1; }
+.chart .zero { stroke: var(--muted); stroke-width: 1; }
+.chart .end-label { font-size: 12px; font-weight: 700; fill: var(--ink); font-family: var(--font-body); }
+.chart .cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.82rem; color: var(--ink); }
+.tip { position: absolute; top: 0; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 0.8rem; box-shadow: 0 2px 8px rgb(0 0 0 / 0.15); min-width: 9rem; display: grid; gap: 2px; }
+.tip[hidden] { display: none; }
+.tip b { font-weight: 700; }
+.tip-row { display: flex; justify-content: space-between; gap: 12px; }
+
+.games { display: grid; gap: 10px; }
+.game { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; background: var(--surface); }
+.game-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.game-nets { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: 4px 12px; font-size: 0.88rem; }
+.status { font-size: 0.75rem; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); color: var(--muted); }
+.status.live { border-color: var(--gain); color: var(--gain); }
+
+.form { display: grid; gap: 14px; }
+.loc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(7.5rem, 1fr) auto; gap: 8px; align-items: end; }
+.loc-row .ghost { height: 46px; }
+/* iOS 的時間欄位有自己的最小寬度，要拿掉原生外觀才不會撐出畫面 */
+input[type="time"].input { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; display: block; min-height: 46px; text-align: left; }
+.names { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 12px; }
+.seat-form { display: grid; gap: 6px; }
+.input { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; width: 100%; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 10px; }
+.toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 0.92rem; }
+.toggle input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--felt); flex: none; }
+.hint { font-size: 0.8rem; color: var(--muted); }
+.error { color: var(--loss); font-size: 0.88rem; }
+@media (prefers-reduced-motion: no-preference) { .chip, .seg button, .tabs button { transition: background 0.15s; } }
+.share { display: flex; gap: 8px; }
+.share .input { flex: 1; min-width: 0; font-size: 0.85rem; }
+.landing { display: grid; gap: 14px; max-width: 32rem; margin: 6vh auto 0; text-align: center; }
+.landing .primary { justify-self: center; padding-inline: 28px; }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-in">
+    <div class="brand">麻將帳本 <span class="sync" id="sync">讀取中</span></div>
+    <nav class="tabs" id="tabs" aria-label="分頁">
+      <button type="button" data-tab="table">牌局</button>
+      <button type="button" data-tab="log">紀錄</button>
+      <button type="button" data-tab="history">戰績</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="view"><p class="empty">正在讀取牌局…</p></main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="logic.js"></script>
+<script>
+const W = MJ.WINDS;
+const LS_KEY = 'mj-ledger-games';
+const $view = document.getElementById('view');
+const newEntry = (type) => ({ type: type || 'ron', winner: null, loser: null, tai: 0 });
+const ui = {
+  tab: 'table', viewId: null, armed: null, flash: '', error: '', draft: null,
+  entry: newEntry(), edit: null, seatPanel: null, filter: { loc: '', month: '' },
+  rename: { from: '', to: '', error: '', done: '' },
+};
+let games = [];
+let mode = 'loading';
+let db = null;
+let notice = '';
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toLocaleString('en-US');
+const cls = (n) => (n > 0 ? 'gain' : n < 0 ? 'loss' : '');
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const dateLabel = (t) => { const d = new Date(t); return (d.getMonth() + 1) + '/' + d.getDate(); };
+const byNewest = (a, b) => b.createdAt - a.createdAt;
+const pad2 = (n) => String(n).padStart(2, '0');
+const clock = (t) => { const d = new Date(t); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
+const startOf = (g) => g.startedAt || g.createdAt;
+const monthOf = (g) => { const d = new Date(startOf(g)); return d.getFullYear() + '-' + pad2(d.getMonth() + 1); };
+const lastHandAt = (g) => (g.hands.length ? g.hands[g.hands.length - 1].t : null);
+const activeGame = () => games.filter((g) => !g.endedAt).sort(byNewest)[0] || null;
+const viewedGame = () => (ui.viewId && games.find((x) => x.id === ui.viewId)) || activeGame();
+
+function durationLabel(ms) {
+  const m = Math.max(0, Math.round(ms / 60000));
+  const h = Math.floor(m / 60);
+  return (h ? h + ' 小時 ' : '') + (m % 60) + ' 分';
+}
+// 時間：開打時間到最後一把記錄的時間
+function timeLabel(g) {
+  const s = startOf(g);
+  const e = lastHandAt(g);
+  if (!e) return clock(s) + ' 開打';
+  return `${clock(s)}–${clock(e)}（${durationLabel(e - s)}）`;
+}
+const teamName = (seat) => seat.members.join('／');
+
+const namesIn = (g) => MJ.lineupsOf(g).flatMap((l) => l.seats.flatMap((s) => s.members));
+// 所有出現過的名字，依照第一次出現的順序
+function allNames() {
+  const all = [];
+  games.slice().sort((a, b) => a.createdAt - b.createdAt).forEach((g) =>
+    namesIn(g).forEach((n) => { if (!all.includes(n)) all.push(n); }));
+  return all;
+}
+// 輸入名字時可以直接點以前用過的
+const peopleList = () => `<datalist id="peopleList">${allNames().map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>`;
+
+// 每個人固定一個顏色，依照第一次出現的順序，篩選時顏色不會跑掉
+function colorOf(name) {
+  const i = allNames().indexOf(name);
+  return i >= 0 && i < 8 ? `var(--s${i + 1})` : 'var(--s-other)';
+}
+
+// ---------- 資料存取：Firebase 上的一個「房間」，網址 # 後面就是房間碼 ----------
+// 房間碼夠長又是亂數，只有拿到連結的人找得到這間房的資料
+const ROOM_KEY = 'mj-room';
+let room = null;
+let pending = false;
+
+const validRoom = (s) => /^[A-Za-z0-9]{20,64}$/.test(s || '');
+function newRoomCode() {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const buf = new Uint32Array(24);
+  crypto.getRandomValues(buf);
+  return Array.from(buf, (n) => abc[n % abc.length]).join('');
+}
+const roomLink = () => location.origin + location.pathname + '#' + room;
+
+function findRoom() {
+  const h = location.hash.replace(/^#/, '');
+  if (validRoom(h)) return h;
+  let saved = null;
+  try { saved = localStorage.getItem(ROOM_KEY); } catch (e) { saved = null; }
+  return validRoom(saved) ? saved : null;
+}
+
+function enterRoom(code) {
+  room = code;
+  try { localStorage.setItem(ROOM_KEY, code); } catch (e) { /* 只是方便下次打開，存不了也沒關係 */ }
+  if (location.hash !== '#' + code) history.replaceState(null, '', '#' + code);
+  connect();
+}
+
+async function boot() {
+  if (!window.FIREBASE_CONFIG || !window.firebase) {
+    mode = 'local';
+    try { games = JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch (e) { games = []; }
+    render();
+    return;
+  }
+  firebase.initializeApp(window.FIREBASE_CONFIG);
+  db = firebase.firestore();
+  // 打牌的地方網路不穩也能記，連上網路後會自動補傳
+  try { await db.enablePersistence({ synchronizeTabs: true }); } catch (e) { /* 不支援離線就照常連線 */ }
+  const code = findRoom();
+  if (code) enterRoom(code);
+  else { mode = 'noroom'; render(); }
+}
+
+// 已經開著 App 時又點了另一個房間的連結
+window.addEventListener('hashchange', () => {
+  const h = location.hash.replace(/^#/, '');
+  if (db && validRoom(h) && h !== room) enterRoom(h);
+});
+
+let unsubscribe = null;
+function connect() {
+  if (unsubscribe) unsubscribe();
+  mode = 'loading';
+  render();
+  unsubscribe = db.collection('rooms').doc(room).collection('games').onSnapshot({ includeMetadataChanges: true }, (snap) => {
+    const wasLoading = mode === 'loading';
+    mode = snap.metadata.fromCache ? 'offline' : 'cloud';
+    pending = snap.metadata.hasPendingWrites;
+    // 只有同步狀態變了就只更新右上角，不重畫整頁，免得打字打到一半被打斷
+    if (!wasLoading && snap.docChanges().length === 0) { updateSync(); return; }
+    games = snap.docs.map((doc) => Object.assign({ id: doc.id }, clone(doc.data())));
+    render();
+  }, () => {
+    notice = '連不上資料庫。請確認網址是牌友傳給你的完整連結，再重新整理頁面。';
+    mode = 'cloud';
+    render();
+  });
+}
+
+function persistLocal() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(games)); } catch (e) { notice = '這台裝置無法儲存資料。'; }
+}
+
+function writeFail() {
+  notice = '儲存失敗，請確認網路後再記一次。';
+  render();
+}
+
+function saveGame(g) {
+  const i = games.findIndex((x) => x.id === g.id);
+  if (i >= 0) games[i] = g; else games.push(g);
+  if (mode === 'local') { persistLocal(); return; }
+  const body = Object.assign({}, g);
+  delete body.id;
+  // 離線時寫入會先排隊，不用等它完成
+  db.collection('rooms').doc(room).collection('games').doc(g.id).set(body).catch(writeFail);
+}
+
+function removeGame(id) {
+  games = games.filter((g) => g.id !== id);
+  if (mode === 'local') { persistLocal(); return; }
+  db.collection('rooms').doc(room).collection('games').doc(id).delete().catch(writeFail);
+}
+
+function updateSync() {
+  const sync = document.getElementById('sync');
+  sync.textContent = mode === 'local' ? '只存在本機'
+    : mode === 'loading' || mode === 'noroom' ? (mode === 'noroom' ? '尚未加入房間' : '讀取中')
+    : mode === 'offline' ? '離線中（會自動補傳）'
+    : pending ? '同步中…' : '已同步';
+}
+
+function viewLanding() {
+  return `<section class="panel landing">
+    <h2>開一個牌局房間</h2>
+    <p class="hint">一個房間就是你們這群牌友共用的帳本。開好後把網址傳給牌友，大家打開同一個連結，就能一起記帳、即時看到戰績。</p>
+    <button type="button" class="primary" data-act="newRoom">開新房間</button>
+    <p class="hint">朋友已經開好房間的話，不用再開新的。直接打開他傳給你的連結，或把連結貼在下面：</p>
+    <div class="share"><input class="input" id="joinLink" placeholder="貼上房間連結" autocomplete="off" aria-label="房間連結">
+      <button type="button" class="ghost" data-act="joinRoom">加入</button></div>
+    ${ui.error ? `<p class="error" role="alert">${esc(ui.error)}</p>` : ''}
+  </section>`;
+}
+
+function sharePanel() {
+  if (mode === 'local' || !room) return '';
+  return `<section class="panel"><h2>邀請牌友</h2>
+    <p class="hint">把這個連結傳給牌友，打開就能一起記帳。只傳給認識的人，拿到連結的人都能修改帳本。</p>
+    <div class="share"><input class="input" id="roomLink" value="${esc(roomLink())}" readonly aria-label="房間連結">
+      <button type="button" class="ghost" data-act="copyLink">複製</button></div>
+    ${ui.copied ? '<div class="flash" role="status">已複製</div>' : ''}
+  </section>`;
+}
+
+// 舊牌局只有 players，第一次改座位時轉成 lineups
+function withLineups(g) {
+  const ng = clone(g);
+  if (!ng.lineups) ng.lineups = clone(MJ.lineupsOf(g));
+  return ng;
+}
+
+// ---------- 畫面 ----------
+function render() {
+  document.querySelectorAll('#tabs button').forEach((b) => {
+    if (b.dataset.tab === ui.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  updateSync();
+  if (mode === 'loading') { $view.innerHTML = '<p class="empty">正在讀取牌局…</p>'; return; }
+  if (mode === 'noroom') { $view.innerHTML = viewLanding(); return; }
+  let html = notice ? `<div class="notice" role="status">${esc(notice)}</div>` : '';
+  if (mode === 'local' && !notice) html += '<div class="notice">這個畫面沒有連上雲端，資料只會存在這台裝置的瀏覽器裡。</div>';
+  if (ui.tab === 'table') html += viewTable();
+  else if (ui.tab === 'log') html += viewLog();
+  else html += viewHistory();
+  $view.innerHTML = html;
+}
+
+function seatHtml(r, p) {
+  const st = r.state;
+  const seat = r.lineup.seats[p];
+  const name = seat.members[seat.on];
+  const isDealer = st.dealer === p;
+  const net = r.people[name].net;
+  const teamNet = seat.members.reduce((a, n) => a + r.people[n].net, 0);
+  const mates = seat.members.filter((n) => n !== name);
+  const e = ui.entry;
+  const win = e.type !== 'draw' && e.winner === p;
+  const lose = e.type === 'ron' && e.loser === p;
+  const tag = win ? `<span class="tag">${e.type === 'tsumo' ? '自摸' : '胡'}</span>` : lose ? '<span class="tag lose">放槍</span>' : '';
+  const badge = isDealer && !tag ? `<span class="badge">莊${st.streak ? ' 連' + st.streak : ''}</span>` : '';
+  return `<button type="button" class="seat${isDealer ? ' dealer' : ''}${win ? ' pick-win' : ''}${lose ? ' pick-lose' : ''}" style="grid-area:s${p}"
+      data-act="seatPick" data-p="${p}"${e.type === 'draw' || ui.seatPanel ? ' disabled' : ''} aria-pressed="${win || lose}">
+    <span class="seat-top"><span class="wind">${W[p]}</span><span class="seat-name">${esc(name)}</span>${tag || badge}</span>
+    ${mates.length ? `<span class="seat-mate">隊友 ${mates.map(esc).join('、')}</span>` : ''}
+    <span class="seat-net num ${net ? cls(net) : 'zero'}">${net ? money(net) : '±0'}</span>
+    <span class="seat-chips num">籌碼 ${(1000 + teamNet).toLocaleString('en-US')}${mates.length ? '（全隊）' : ''}</span>
+  </button>`;
+}
+
+// 點卡片選人：先點的是胡牌的人；放槍模式再點另一家就是放槍的人
+function pickSeat(p) {
+  const e = ui.entry;
+  if (e.type === 'draw') return;
+  if (e.winner === p) { e.winner = null; e.loser = null; return; }
+  if (e.type === 'tsumo' || e.winner == null) { e.winner = p; if (e.loser === p) e.loser = null; return; }
+  e.loser = e.loser === p ? null : p;
+}
+
+function pickedLine(e, names) {
+  if (e.type === 'draw') return '<div class="picked">流局<span class="hint">，直接記錄就好</span></div>';
+  if (e.winner == null) return `<div class="picked hint">點上面的卡片選誰${e.type === 'tsumo' ? '自摸' : '胡牌'}</div>`;
+  if (e.type === 'tsumo') return `<div class="picked">${esc(names[e.winner])} 自摸</div>`;
+  if (e.loser == null) return `<div class="picked">${esc(names[e.winner])} 胡<span class="hint">，再點放槍的人</span></div>`;
+  return `<div class="picked">${esc(names[e.winner])} 胡 ${esc(names[e.loser])}</div>`;
+}
+
+function handFrom(e) {
+  if (e.type === 'draw') return { type: 'draw', tai: 0 };
+  if (e.winner == null) return null;
+  if (e.type === 'ron') {
+    if (e.loser == null || e.loser === e.winner) return null;
+    return { type: 'ron', winner: e.winner, loser: e.loser, tai: e.tai };
+  }
+  return { type: 'tsumo', winner: e.winner, tai: e.tai };
+}
+
+function extraNote(g, st, x) {
+  const parts = [];
+  if (x.selfTai) parts.push('自摸 1 台');
+  if (x.extra && g.settings.dealerTai) parts.push('莊家 1 台');
+  if (x.extra && st.streak) parts.push(`連${st.streak}拉${st.streak} ${st.streak * 2} 台`);
+  return parts.join('、');
+}
+
+function previewHtml(g, st, hand, names) {
+  if (!hand) return '<div class="preview hint">選好胡牌的人（放槍還要選放槍的人），這裡會先算出金額。</div>';
+  if (hand.type === 'draw') {
+    const keep = g.settings.drawStreak ? `莊家續莊，變成連 ${st.streak + 1}` : '莊家續莊，連莊數不變';
+    return `<div class="preview">流局，不用付錢。${keep}。</div>`;
+  }
+  const res = MJ.settleHand(st, hand, g.settings);
+  const lines = res.pays.map((x) => {
+    const note = extraNote(g, st, x);
+    return `<div class="pay"><div>${esc(names[x.from])} 付給 ${esc(names[x.to])}
+      <small>底 ${g.settings.base} + ${hand.tai + x.selfTai + x.extra} 台 × ${g.settings.perTai}${note ? '（含' + note + '）' : ''}</small></div>
+      <div class="num"><b>${x.amt.toLocaleString('en-US')}</b></div></div>`;
+  }).join('');
+  const total = res.pays.reduce((a, x) => a + x.amt, 0);
+  const sum = res.pays.length > 1 ? `<div class="pay"><div>${esc(names[hand.winner])} 共收</div><div class="num gain"><b>${total.toLocaleString('en-US')}</b></div></div>` : '';
+  return `<div class="preview">${lines}${sum}</div>`;
+}
+
+// 記一把和修改某一把共用同一個面板，scope 決定改的是哪一份狀態
+function handForm(scope, e, g, st, names) {
+  const chips = (key, disabledIdx) => [0, 1, 2, 3].map((p) =>
+    `<button type="button" class="chip" data-act="pick" data-scope="${scope}" data-key="${key}" data-p="${p}" aria-pressed="${e[key] === p}"${p === disabledIdx ? ' disabled' : ''}>${esc(names[p])}</button>`).join('');
+  const typeBtn = (t, label) => `<button type="button" data-act="type" data-scope="${scope}" data-t="${t}" aria-pressed="${e.type === t}">${label}</button>`;
+  // 記一把時直接點牌桌上的卡片選人，不另外列名字按鈕
+  const pickers = scope === 'entry' ? pickedLine(e, names) : `
+    ${e.type === 'draw' ? '' : `<div class="field"><span class="label">誰胡牌</span><div class="chips">${chips('winner', -1)}</div></div>`}
+    ${e.type === 'ron' ? `<div class="field"><span class="label">誰放槍</span><div class="chips">${chips('loser', e.winner)}</div></div>` : ''}`;
+  return `<div class="seg">${typeBtn('ron', '放槍')}${typeBtn('tsumo', '自摸')}${typeBtn('draw', '流局')}</div>
+    ${pickers}
+    ${e.type === 'draw' ? '' : `<div class="field"><span class="label">台數（${g.settings.tsumoTai !== false ? '不含自摸和連莊' : '不含連莊'}，App 會自動加）</span>
+      <div class="stepper">
+        <button type="button" class="round" data-act="tai" data-scope="${scope}" data-d="-1" aria-label="減一台">−</button>
+        <span class="tai num" aria-live="polite">${e.tai}</span>
+        <button type="button" class="round" data-act="tai" data-scope="${scope}" data-d="1" aria-label="加一台">+</button>
+        <div class="quick">${[1, 2, 3, 4, 5, 8].map((n) => `<button type="button" data-act="taiset" data-scope="${scope}" data-n="${n}">${n}</button>`).join('')}</div>
+      </div></div>`}
+    ${previewHtml(g, st, handFrom(e), names)}`;
+}
+
+function viewTable() {
+  const g = activeGame();
+  if (!g) return viewSetup();
+  const r = MJ.replay(g);
+  const st = r.state;
+  const names = MJ.sittingOf(r.lineup);
+  const hand = handFrom(ui.entry);
+  const seats = [0, 1, 2, 3].map((p) => seatHtml(r, p)).join('');
+  const side = ui.seatPanel ? seatPanelHtml(g, r) : `<section class="panel" aria-label="記一把">
+      <h2>記一把</h2>
+      ${handForm('entry', ui.entry, g, st, names)}
+      <button type="button" class="primary" data-act="record"${hand ? '' : ' disabled'}>記錄這一把</button>
+      ${ui.flash ? `<div class="flash" role="status">${esc(ui.flash)}</div>` : ''}
+    </section>`;
+  const done = MJ.totalRotation(g);
+  return `<div class="play">
+    <div class="table-col">
+      <section class="state" aria-label="目前局面">
+        <div class="state-top"><span class="state-round">${MJ.roundLabel(st.rotation).replace('風', '風 ')}</span><span class="state-no num">第 ${g.hands.length + 1} 把</span></div>
+        <div class="state-sub num">莊 ${esc(names[st.dealer])}${st.streak ? ' 連' + st.streak : ''} · 已打 ${done ? MJ.progressLabel(done) : '0 局'} · ${timeLabel(g)}</div>
+      </section>
+      <section class="seats" aria-label="四家">${seats}</section>
+      <div class="links">
+        <button type="button" class="link" data-act="seatOpen" data-mode="swap">換手</button>
+        <button type="button" class="link" data-act="seatOpen" data-mode="redraw">重新抽位子</button>
+      </div>
+    </div>
+    ${side}
+  </div>`;
+}
+
+// 換手：同一個位子換隊友或新的人上場，牌局繼續；重新抽位子：各隊換座位、重選莊家，從東風東局重算
+function seatPanelHtml(g, r) {
+  const sp = ui.seatPanel;
+  const cur = r.lineup.seats;
+  const err = ui.error ? `<p class="error" role="alert">${esc(ui.error)}</p>` : '';
+  if (sp.mode === 'swap') {
+    const rows = sp.seats.map((seat, p) => `<div class="seat-edit">
+        <span class="label">${W[p]}位 · 誰上場</span>
+        <div class="chips free">${seat.members.map((n, k) =>
+          `<button type="button" class="chip" data-act="swapOn" data-p="${p}" data-k="${k}" aria-pressed="${seat.on === k && !sp.newNames[p]}">${esc(n)}</button>`).join('')}</div>
+        <input class="input" id="newName${p}" data-sp="newName" data-p="${p}" list="peopleList" value="${esc(sp.newNames[p])}" placeholder="換新的人上場（選填，填名字）" autocomplete="off">
+      </div>`).join('');
+    return `<section class="panel" aria-label="換手"><h2>換手</h2>
+      <p class="hint">選每個位子要換誰上場。牌局照常往下算，輸贏跟著人走。</p>
+      ${rows}${peopleList()}${err}
+      <div class="row-actions"><button type="button" class="primary" data-act="seatSave">確定換手</button>
+        <button type="button" class="ghost" data-act="seatCancel">取消</button></div></section>`;
+  }
+  const opt = (sel) => cur.map((seat, j) => `<option value="${j}"${sel === j ? ' selected' : ''}>${esc(teamName(seat))}</option>`).join('');
+  const rows = sp.order.map((j, k) => `<label class="field"><span class="label">${W[k]}位</span>
+      <select class="input" id="redraw${k}" data-sp="order" data-k="${k}">${opt(j)}</select></label>`).join('');
+  const dealerOpts = sp.order.map((j, k) => `<option value="${k}"${sp.dealer === k ? ' selected' : ''}>${W[k]}位（${esc(teamName(cur[j]))}）</option>`).join('');
+  return `<section class="panel" aria-label="重新抽位子"><h2>重新抽位子</h2>
+    <p class="hint">照新抽到的風位排好，再選擲骰子算到的人當莊。圈局會從東風東局重新開始，輸贏照樣累計。</p>
+    <div class="names">${rows}</div>
+    <label class="field"><span class="label">誰當莊</span><select class="input" id="redrawDealer" data-sp="dealer">${dealerOpts}</select></label>
+    ${err}
+    <div class="row-actions"><button type="button" class="primary" data-act="seatSave">確定換位子</button>
+      <button type="button" class="ghost" data-act="seatCancel">取消</button></div></section>`;
+}
+
+function handText(names, h) {
+  const n = (p) => esc(names[p]);
+  if (h.type === 'draw') return '流局';
+  if (h.type === 'tsumo') return `${n(h.winner)} 自摸 ${h.tai} 台`;
+  return `${n(h.winner)} 胡 ${n(h.loser)} ${h.tai} 台`;
+}
+
+function armBtn(key, label, extraCls) {
+  const armed = ui.armed === key;
+  return `<button type="button" class="ghost warn${armed ? ' armed' : ''}${extraCls || ''}" data-act="arm" data-key="${key}">${armed ? '再按一次確認' + label : label}</button>`;
+}
+
+// 以前打過的地點，輸入時可以直接選
+function locList() {
+  const locs = [...new Set(games.map((g) => (g.location || '').trim()).filter(Boolean))];
+  return `<datalist id="locList">${locs.map((l) => `<option value="${esc(l)}"></option>`).join('')}</datalist>`;
+}
+
+function changeText(r, c) {
+  const prev = r.changes.indexOf(c) > 0 ? r.changes[r.changes.indexOf(c) - 1].lineup : MJ.lineupsOf(viewedGame())[0];
+  const now = MJ.sittingOf(c.lineup);
+  if (c.lineup.restart) return `重新抽位子：莊家 ${esc(now[c.lineup.dealer])}，從東風東局重新算`;
+  const before = MJ.sittingOf(prev);
+  const diff = now.map((n, p) => (n !== before[p] ? `${esc(before[p])} 下、${esc(n)} 上` : '')).filter(Boolean);
+  return '換手：' + (diff.join('；') || '座位不變');
+}
+
+function viewLog() {
+  const g = viewedGame();
+  if (!g) return '<p class="empty">目前沒有進行中的牌局。到「牌局」開一場新的，或到「戰績」看以前的紀錄。</p>';
+  const r = MJ.replay(g);
+  const s = g.settings;
+  const statRows = r.order.map((n) => {
+    const o = r.people[n];
+    return `<tr><td><span class="dot" style="background:${colorOf(n)}"></span>${esc(n)}</td>
+    <td class="num ${cls(o.net)}"><b>${money(o.net)}</b></td><td class="num">${o.hands}</td>
+    <td class="num">${o.win}</td><td class="num">${o.tsumo}</td><td class="num">${o.deal}</td></tr>`;
+  }).join('');
+
+  // 每一把的列表，新的在上面；換手或重新抽位子的地方插一行說明
+  const items = [];
+  r.rows.forEach((row) => {
+    r.changes.filter((c) => c.at === row.index).forEach((c) => items.push(`<li class="marker">第 ${row.no} 把開始　${changeText(r, c)}</li>`));
+    const deltas = [0, 1, 2, 3].filter((p) => row.delta[p]).map((p) =>
+      `<span>${esc(row.names[p])} <b class="num ${cls(row.delta[p])}">${money(row.delta[p])}</b></span>`).join('');
+    const editing = ui.edit && ui.edit.index === row.index;
+    items.push(`<li class="hand${editing ? ' current' : ''}"><div class="hand-no num">${row.no}</div>
+      <div><div class="hand-what">${handText(row.names, row.hand)}</div>
+      <div class="hand-meta">${row.hand.t ? clock(row.hand.t) + ' · ' : ''}${MJ.roundLabel(row.before.rotation)} · 莊 ${esc(row.names[row.before.dealer])}${row.before.streak ? ' 連' + row.before.streak : ''}</div></div>
+      <button type="button" class="ghost small" data-act="edit" data-i="${row.index}">修改</button>
+      ${deltas ? `<div class="hand-deltas">${deltas}</div>` : ''}</li>`);
+  });
+  r.changes.filter((c) => c.at >= r.rows.length).forEach((c) => items.push(`<li class="marker">下一把開始　${changeText(r, c)}</li>`));
+  const list = items.reverse().join('');
+
+  let editPanel = '';
+  if (ui.edit && g.hands[ui.edit.index]) {
+    const row = r.rows[ui.edit.index];
+    const hand = handFrom(ui.edit);
+    editPanel = `<section class="panel editing" id="editPanel" aria-label="修改這一把">
+      <h2>修改第 ${row.no} 把</h2>
+      <div class="hint">${MJ.roundLabel(row.before.rotation)} · 莊 ${esc(row.names[row.before.dealer])}${row.before.streak ? ' 連' + row.before.streak : ''}。改完後面每一把會自動重算。</div>
+      ${handForm('edit', ui.edit, g, row.before, row.names)}
+      <div class="row-actions"><button type="button" class="primary" data-act="editSave"${hand ? '' : ' disabled'}>儲存修改</button>
+        <button type="button" class="ghost" data-act="editCancel">取消</button>${armBtn('delhand', '刪除這一把')}</div>
+    </section>`;
+  }
+
+  const live = !g.endedAt;
+  const actions = live
+    ? `<div class="row-actions">${armBtn('end', '結束這場')}</div>`
+    : `<div class="row-actions"><button type="button" class="ghost" data-act="tab" data-tab="history">回戰績</button></div>`;
+  const chart = gameChart(g, r);
+  return `<section class="panel">
+      <div class="game-head"><h2>${dateLabel(startOf(g))} 牌局</h2><span class="status${live ? ' live' : ''}">${live ? '進行中' : '已結束'}</span></div>
+      <div class="hint num">${timeLabel(g)} · 打了 ${MJ.totalRotation(g) ? MJ.progressLabel(MJ.totalRotation(g)) : '0 局'}（${g.hands.length} 把）</div>
+      ${ui.editMeta ? `<div class="loc-row">
+        <label class="field loc-place"><span class="label">地點</span><input class="input" id="locEdit" list="locList" value="${esc(g.location || '')}" placeholder="例如：阿明家" autocomplete="off"></label>
+        <label class="field loc-time"><span class="label">開打時間</span><input class="input num" id="startEdit" type="time" value="${clock(startOf(g))}"></label>
+        <button type="button" class="ghost" data-act="saveLoc">儲存</button></div>
+      ${locList()}` : `<div class="meta-row"><span>${g.location ? esc(g.location) : '<span class="hint">還沒填地點</span>'} · <span class="num">${clock(startOf(g))}</span> 開打</span>
+        <button type="button" class="link" data-act="editMeta">編輯</button></div>`}
+      ${ui.flash && ui.tab === 'log' ? `<div class="flash" role="status">${esc(ui.flash)}</div>` : ''}
+      <div class="hint">底 ${s.base}／每台 ${s.perTai} · 自摸加台${s.tsumoTai !== false ? '開' : '關'} · 莊家台${s.dealerTai ? '開' : '關'} · 流局${s.drawStreak ? '加連莊' : '不加連莊'}</div>
+      <div class="scroll"><table class="grid"><thead><tr><th>玩家</th><th>輸贏</th><th>把數</th><th>胡</th><th>自摸</th><th>放槍</th></tr></thead><tbody>${statRows}</tbody></table></div>
+      ${actions}
+    </section>
+    ${chart ? `<section class="panel"><h2>這一場的走勢</h2>${chart}</section>` : ''}
+    ${editPanel}
+    <section class="panel"><h2>每一把</h2>
+      ${list ? `<ol class="hands">${list}</ol>` : '<p class="hint">還沒有記錄。</p>'}
+    </section>`;
+}
+
+// ---------- 走勢圖 ----------
+const charts = {};
+let chartSeq = 0;
+const CH = { l: 52, t: 12, b: 28 };
+
+// 圖照面板的實際寬度畫，字才會是正常大小，不會整張被縮小
+function chartWidth() {
+  const v = document.getElementById('view');
+  return Math.max(260, Math.min(v.clientWidth, 1080) - 32 - 34);
+}
+// 估文字寬度：中文字比英數寬
+const textWidth = (s) => [...s].reduce((a, ch) => a + (/[\x00-\xff]/.test(ch) ? 7.2 : 12.5), 0);
+
+function niceStep(span) {
+  const raw = span / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  return [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw);
+}
+
+function lineChart(series, xLabels, xName) {
+  const n = xLabels.length;
+  if (n < 2 || !series.length) return '';
+  const id = 'c' + (++chartSeq);
+  const w = chartWidth();
+  const h = w < 500 ? 240 : 280;
+  const labelled = series.length <= 6;
+  const endText = (s) => `${s.name} ${money(s.values[n - 1])}`;
+  const r = labelled ? Math.min(w * 0.42, Math.max(...series.map((s) => textWidth(endText(s)))) + 16) : 16;
+  let lo = Math.min(0, ...series.flatMap((s) => s.values));
+  let hi = Math.max(0, ...series.flatMap((s) => s.values));
+  if (hi - lo < 100) { hi += 50; lo -= 50; }
+  const step = niceStep(hi - lo);
+  lo = Math.floor(lo / step) * step;
+  hi = Math.ceil(hi / step) * step;
+  const pw = w - CH.l - r;
+  const ph = h - CH.t - CH.b;
+  const x = (i) => CH.l + (i * pw) / (n - 1);
+  const y = (v) => CH.t + ((hi - v) * ph) / (hi - lo);
+  let grid = '';
+  for (let v = lo; v <= hi + 1e-9; v += step) {
+    grid += `<line class="${v === 0 ? 'zero' : 'grid-line'}" x1="${CH.l}" x2="${CH.l + pw}" y1="${y(v)}" y2="${y(v)}"></line>
+      <text class="axis" x="${CH.l - 6}" y="${y(v) + 4}" text-anchor="end">${v === 0 ? '0' : money(v)}</text>`;
+  }
+  const every = Math.ceil(n / Math.max(3, Math.floor(pw / 56)));
+  let xt = '';
+  xLabels.forEach((lab, i) => {
+    if (i % every === 0 || (i === n - 1 && (n - 1) % every >= every / 2)) {
+      xt += `<text class="axis" x="${x(i)}" y="${h - 8}" text-anchor="middle">${esc(lab.short)}</text>`;
+    }
+  });
+  const lines = series.map((s) => `<polyline fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"
+      points="${s.values.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ')}"></polyline>
+    <circle cx="${x(n - 1)}" cy="${y(s.values[n - 1])}" r="4" fill="${s.color}" stroke="var(--surface)" stroke-width="2"></circle>`).join('');
+  // 線尾直接標名字，太擠時往上下推開
+  let ends = '';
+  if (labelled) {
+    const pos = series.map((s) => ({ s, y: y(s.values[n - 1]) })).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < pos.length; i++) if (pos[i].y - pos[i - 1].y < 16) pos[i].y = pos[i - 1].y + 16;
+    // 推到底超出圖框時，整組往上移
+    const over = pos.length ? pos[pos.length - 1].y - (h - CH.b) : 0;
+    if (over > 0) pos.forEach((p) => { p.y -= over; });
+    ends = pos.map((p) => `<text class="end-label" x="${x(n - 1) + 9}" y="${p.y + 4}">${esc(endText(p.s))}</text>`).join('');
+  }
+  charts[id] = { series, xLabels, n, pw, r, x, y, xName, w };
+  const legend = series.length >= 2 && !labelled ? `<div class="legend">${series.map((s) =>
+    `<span><span class="dot" style="background:${s.color}"></span>${esc(s.name)} <b class="num ${cls(s.values[n - 1])}">${money(s.values[n - 1])}</b></span>`).join('')}</div>` : '';
+  return `<div class="chart">${legend}
+    <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" data-chart="${id}" role="img" aria-label="累計輸贏走勢圖">
+      ${grid}${xt}${lines}${ends}<line class="cross" id="${id}-x" y1="${CH.t}" y2="${CH.t + ph}" x1="-10" x2="-10"></line>
+    </svg><div class="tip" id="${id}-tip" hidden></div></div>`;
+}
+
+function showTip(svg, clientX) {
+  const id = svg.dataset.chart;
+  const c = charts[id];
+  if (!c) return;
+  const rect = svg.getBoundingClientRect();
+  const vx = ((clientX - rect.left) / rect.width) * c.w;
+  const i = Math.max(0, Math.min(c.n - 1, Math.round(((vx - CH.l) * (c.n - 1)) / c.pw)));
+  const cross = document.getElementById(id + '-x');
+  cross.setAttribute('x1', c.x(i)); cross.setAttribute('x2', c.x(i));
+  const tip = document.getElementById(id + '-tip');
+  const rows = c.series.slice().sort((a, b) => b.values[i] - a.values[i]).map((s) =>
+    `<div class="tip-row"><span><span class="dot" style="background:${s.color}"></span>${esc(s.name)}</span><b class="num">${money(s.values[i])}</b></div>`).join('');
+  tip.innerHTML = `<b>${esc(c.xLabels[i].long)}</b>${rows}`;
+  tip.hidden = false;
+  const px = (c.x(i) / c.w) * rect.width;
+  const tw = tip.offsetWidth;
+  tip.style.left = Math.max(0, Math.min(rect.width - tw, px > rect.width / 2 ? px - tw - 12 : px + 12)) + 'px';
+  tip.style.top = (svg.offsetTop + 4) + 'px';
+}
+
+function hideTips() {
+  document.querySelectorAll('.chart .tip').forEach((t) => { t.hidden = true; });
+  document.querySelectorAll('.chart .cross').forEach((l) => { l.setAttribute('x1', -10); l.setAttribute('x2', -10); });
+}
+
+// 螢幕寬度變了（例如 iPad 轉向）才重畫，捲動時網址列伸縮不算
+let lastWidth = window.innerWidth;
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (window.innerWidth !== lastWidth && ui.tab !== 'table') render();
+    lastWidth = window.innerWidth;
+  }, 200);
+});
+
+['pointermove', 'pointerdown'].forEach((type) => document.addEventListener(type, (ev) => {
+  const svg = ev.target.closest && ev.target.closest('svg[data-chart]');
+  if (svg) showTip(svg, ev.clientX); else hideTips();
+}));
+
+function gameChart(g, r) {
+  if (g.hands.length < 1) return '';
+  const run = {};
+  r.order.forEach((n) => { run[n] = [0]; });
+  r.rows.forEach((row) => {
+    r.order.forEach((n) => {
+      const p = row.names.indexOf(n);
+      const prev = run[n][run[n].length - 1];
+      run[n].push(prev + (p >= 0 ? row.delta[p] : 0));
+    });
+  });
+  const labels = [{ short: '開始', long: '開始' }].concat(r.rows.map((row) => ({ short: String(row.no), long: `第 ${row.no} 把` })));
+  return lineChart(r.order.map((n) => ({ name: n, color: colorOf(n), values: run[n] })), labels);
+}
+
+// ---------- 戰績 ----------
+function filteredGames() {
+  return games.filter((g) => (!ui.filter.loc || (g.location || '') === ui.filter.loc) && (!ui.filter.month || monthOf(g) === ui.filter.month));
+}
+
+function viewHistory() {
+  const locs = [...new Set(games.map((g) => g.location || '').filter(Boolean))];
+  const months = [...new Set(games.map(monthOf))].sort().reverse();
+  const sel = (id, key, opts, all) => `<select class="input" id="${id}" data-filter="${key}"><option value="">${all}</option>${opts.map((o) =>
+    `<option value="${esc(o)}"${ui.filter[key] === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  const filters = games.length ? `<div class="filters">
+      <label class="field"><span class="label">地點</span>${sel('fLoc', 'loc', locs, '全部地點')}</label>
+      <label class="field"><span class="label">月份</span>${sel('fMonth', 'month', months, '全部月份')}</label>
+    </div>` : '';
+
+  const fg = filteredGames().sort((a, b) => startOf(a) - startOf(b));
+  const people = {};
+  const reps = fg.map((g) => ({ g, r: MJ.replay(g) }));
+  reps.forEach(({ r }) => r.order.forEach((n) => {
+    const s = r.people[n];
+    if (!s.hands) return;
+    const o = people[n] || (people[n] = { name: n, net: 0, games: 0, hands: 0, win: 0, tsumo: 0, deal: 0, taiSum: 0, maxWin: 0, maxLoss: 0, maxStreak: 0 });
+    o.games += 1;
+    ['net', 'hands', 'win', 'tsumo', 'deal', 'taiSum'].forEach((k) => { o[k] += s[k]; });
+    o.maxWin = Math.max(o.maxWin, s.maxWin);
+    o.maxLoss = Math.min(o.maxLoss, s.maxLoss);
+    o.maxStreak = Math.max(o.maxStreak, s.maxStreak);
+  }));
+  const list = Object.values(people).sort((a, b) => b.net - a.net);
+
+  // 每個人每一場的輸贏（沒上桌是 null），和打完每一場時的累計
+  const perGame = {};
+  const run = {};
+  list.forEach((o) => {
+    perGame[o.name] = reps.map(({ r }) => (r.people[o.name] && r.people[o.name].hands ? r.people[o.name].net : null));
+    let s = 0;
+    run[o.name] = [0].concat(perGame[o.name].map((v) => (s += v || 0)));
+  });
+  const gameLabels = [{ short: '起點', long: '起點' }].concat(reps.map(({ g }) => ({
+    short: dateLabel(startOf(g)), long: `${dateLabel(startOf(g))} 牌局${g.location ? ' · ' + g.location : ''}` })));
+
+  // A：排行，每人一條小走勢，大家用同一個刻度
+  const allVals = list.flatMap((o) => run[o.name]);
+  const lo = Math.min(0, ...allVals);
+  const hi = Math.max(1, ...allVals);
+  const sy = (v) => 3 + ((hi - v) * 30) / (hi - lo || 1);
+  const board = list.map((o, i) => {
+    const vals = run[o.name];
+    const pts = vals.map((v, k) => ((k * 100) / Math.max(1, vals.length - 1)).toFixed(1) + ',' + sy(v).toFixed(1)).join(' ');
+    const open = ui.openPerson === o.name;
+    const last = perGame[o.name].filter((v) => v != null).slice(-1)[0];
+    const detail = open ? `<div class="lead-detail">
+        <div class="hint num">${o.games} 場 · 最近一場 ${money(last || 0)} · 單場最多贏 ${money(Math.max(0, ...perGame[o.name].filter((v) => v != null)))} · 單場最多輸 ${money(Math.min(0, ...perGame[o.name].filter((v) => v != null)))}</div>
+        ${lineChart([{ name: o.name, color: o.net >= 0 ? 'var(--gain)' : 'var(--loss)', values: vals }], gameLabels)}</div>` : '';
+    return `<div class="lead-item${open ? ' open' : ''}">
+      <button type="button" class="lead" data-act="person" data-i="${i}" aria-expanded="${open}">
+        <span class="lead-rank num">${i + 1}</span>
+        <span class="lead-name">${esc(o.name)}</span>
+        <svg class="spark" viewBox="0 0 100 36" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="0" x2="100" y1="${sy(0)}" y2="${sy(0)}" class="spark-zero"></line>
+          <polyline points="${pts}" fill="none" stroke="${o.net >= 0 ? 'var(--gain)' : 'var(--loss)'}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"></polyline>
+        </svg>
+        <span class="lead-amt num ${o.net ? cls(o.net) : 'zero'}">${o.net ? money(o.net) : '±0'}</span>
+      </button>${detail}</div>`;
+  }).join('');
+
+  // B：每場輸贏格子表，最新的一場在最左邊
+  const maxAbs = Math.max(1, ...list.flatMap((o) => perGame[o.name].map((v) => Math.abs(v || 0))));
+  const order = reps.map((_, k) => k).reverse();
+  const heat = list.length ? `<div class="scroll heat-wrap"><table class="heat">
+      <thead><tr><th class="heat-name">玩家</th><th>合計</th>${order.map((k) => `<th title="${esc(gameLabels[k + 1].long)}">${esc(gameLabels[k + 1].short)}</th>`).join('')}</tr></thead>
+      <tbody>${list.map((o) => `<tr><th class="heat-name">${esc(o.name)}</th>
+        <td class="num heat-total ${o.net ? cls(o.net) : 'zero'}">${o.net ? money(o.net) : '±0'}</td>
+        ${order.map((k) => {
+          const v = perGame[o.name][k];
+          if (v == null) return '<td class="heat-none">—</td>';
+          const p = Math.round(12 + (Math.abs(v) / maxAbs) * 48);
+          const bg = v ? `background:color-mix(in srgb, var(${v > 0 ? '--gain' : '--loss'}) ${p}%, var(--surface))` : '';
+          return `<td class="num" style="${bg}">${v ? money(v) : '0'}</td>`;
+        }).join('')}</tr>`).join('')}</tbody></table></div>` : '';
+
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) + '%' : '—');
+  const statRows = list.map((o) => `<tr><td>${esc(o.name)}</td><td class="num">${o.games}</td><td class="num">${o.hands}</td>
+      <td class="num">${pct(o.win, o.hands)}</td><td class="num">${pct(o.tsumo, o.hands)}</td><td class="num">${pct(o.deal, o.hands)}</td>
+      <td class="num">${o.win ? (o.taiSum / o.win).toFixed(1) : '—'}</td>
+      <td class="num gain">${o.maxWin ? money(o.maxWin) : '—'}</td><td class="num loss">${o.maxLoss ? money(o.maxLoss) : '—'}</td>
+      <td class="num">${o.maxStreak ? '連' + o.maxStreak : '—'}</td></tr>`).join('');
+
+  const cards = fg.slice().reverse().map(({ id }) => {
+    const g = games.find((x) => x.id === id);
+    const r = MJ.replay(g);
+    const nets = r.order.filter((n) => r.people[n].hands).map((n) =>
+      `<span>${esc(n)} <b class="num ${cls(r.people[n].net)}">${money(r.people[n].net)}</b></span>`).join('');
+    return `<div class="game"><div class="game-head"><b>${dateLabel(startOf(g))} 牌局${g.location ? ' · ' + esc(g.location) : ''}</b>
+        <span class="status${g.endedAt ? '' : ' live'}">${g.endedAt ? '已結束' : '進行中'}</span></div>
+      <div class="hint num">${timeLabel(g)} · ${MJ.progressLabel(MJ.totalRotation(g))}（${g.hands.length} 把）</div>
+      <div class="game-nets">${nets || '<span class="hint">還沒有記錄</span>'}</div>
+      <div class="row-actions"><button type="button" class="ghost" data-act="open" data-id="${g.id}">看紀錄</button>${armBtn('del:' + g.id, '刪除')}</div></div>`;
+  }).join('');
+
+  const scope = ui.filter.loc || ui.filter.month ? '（篩選後）' : '';
+  return `${filters ? `<section class="panel">${filters}<div class="hint">${fg.length} 場符合</div></section>` : ''}
+    <section class="panel"><h2>累計輸贏${scope}</h2>
+      ${board ? `<p class="hint">小線是每場打完時的累計，大家用同一個刻度。點一個人看大圖。</p><div class="board">${board}</div>` : '<p class="hint">打完第一場就會出現排行。名字打一樣的會算成同一個人。</p>'}</section>
+    ${heat ? `<section class="panel"><h2>每場輸贏${scope}</h2><p class="hint">最新的一場在最左邊，可以左右滑。綠色是贏、紅色是輸，顏色越深金額越大；「—」是那場沒上桌。</p>${heat}</section>` : ''}
+    ${statRows ? `<section class="panel"><h2>個人數據${scope}</h2>
+      <div class="scroll"><table class="grid"><thead><tr><th>玩家</th><th>場</th><th>把數</th><th>胡牌率</th><th>自摸率</th><th>放槍率</th><th>平均台</th><th>單把最多贏</th><th>單把最多輸</th><th>最高連莊</th></tr></thead>
+      <tbody>${statRows}</tbody></table></div>
+      <p class="hint">把數是有上桌的把數；平均台是胡牌時的台數，含自摸那 1 台、不含連莊。</p></section>` : ''}
+    <section class="panel"><div class="game-head"><h2>每一場${scope}</h2>
+        ${games.length ? '<button type="button" class="ghost" data-act="export">匯出 CSV</button>' : ''}</div>
+      ${ui.flash && ui.tab === 'history' ? `<div class="flash" role="status">${esc(ui.flash)}</div>` : ''}
+      ${cards ? `<div class="games">${cards}</div>` : '<p class="hint">沒有符合的牌局。</p>'}</section>
+    ${games.length ? renamePanel() : ''}
+    ${sharePanel()}`;
+}
+
+// 改名或合併：所有牌局裡的這個名字一起換掉；新名字已經有人用，就等於把兩份戰績合併
+function renamePanel() {
+  const rn = ui.rename;
+  const opts = allNames().map((n) => `<option value="${esc(n)}"${rn.from === n ? ' selected' : ''}>${esc(n)}</option>`).join('');
+  const armed = ui.armed === 'rename';
+  return `<section class="panel"><h2>改名／合併</h2>
+    <p class="hint">所有牌局裡的這個名字會一起改。新名字如果已經有人用，兩份戰績會合併成一份，例如把「Penny」併到「penny」。</p>
+    <div class="loc-row">
+      <label class="field"><span class="label">原本的名字</span><select class="input" id="rnFrom" data-rn="from"><option value="">選一個人</option>${opts}</select></label>
+      <label class="field"><span class="label">改成</span><input class="input" id="rnTo" data-rn="to" list="peopleList" value="${esc(rn.to)}" placeholder="新名字" autocomplete="off"></label>
+      <button type="button" class="ghost${armed ? ' warn armed' : ''}" data-act="rename">${armed ? '再按一次確認合併' : '套用'}</button>
+    </div>${peopleList()}
+    ${rn.error ? `<p class="error" role="alert">${esc(rn.error)}</p>` : ''}
+    ${rn.done ? `<div class="flash" role="status">${esc(rn.done)}</div>` : ''}</section>`;
+}
+
+function doRename() {
+  const rn = ui.rename;
+  const from = rn.from;
+  const to = rn.to.trim();
+  rn.done = '';
+  if (!from || !to) { rn.error = '先選原本的名字，再填要改成什麼。'; return; }
+  if (from === to) { rn.error = '新名字跟原本一樣。'; return; }
+  const clash = games.find((g) => namesIn(g).includes(from) && namesIn(g).includes(to));
+  if (clash) { rn.error = `${dateLabel(startOf(clash))} 那一場「${from}」和「${to}」同時在場，應該是兩個人，不能合併。`; return; }
+  const merge = allNames().includes(to);
+  if (merge && ui.armed !== 'rename') { rn.error = ''; setArmed('rename'); return; }
+  setArmed(null);
+  games.filter((g) => namesIn(g).includes(from)).forEach((g) => {
+    const ng = withLineups(g);
+    ng.lineups.forEach((l) => l.seats.forEach((s) => { s.members = s.members.map((n) => (n === from ? to : n)); }));
+    saveGame(ng);
+  });
+  ui.rename = { from: '', to: '', error: '', done: merge ? `已把「${from}」合併到「${to}」` : `已把「${from}」改名為「${to}」` };
+}
+
+function viewSetup() {
+  if (!ui.draft) {
+    const last = games.slice().sort(byNewest)[0];
+    const seats = last ? MJ.replayLineupSeats(last) : null;
+    ui.draft = {
+      names: seats ? seats.map((s) => s.members[0] || '') : ['', '', '', ''],
+      mates: seats ? seats.map((s) => s.members[1] || '') : ['', '', '', ''],
+      location: '',
+      startDealer: 0,
+      base: last ? last.settings.base : 50,
+      perTai: last ? last.settings.perTai : 20,
+      tsumoTai: last ? last.settings.tsumoTai !== false : true,
+      dealerTai: last ? last.settings.dealerTai : false,
+      drawStreak: last ? last.settings.drawStreak : true,
+    };
+  }
+  const d = ui.draft;
+  const seatForms = d.names.map((n, i) => `<div class="seat-form">
+      <label class="field"><span class="label">${W[i]}位</span>
+        <input class="input" id="name${i}" data-draft="name" data-i="${i}" list="peopleList" value="${esc(n)}" placeholder="名字" autocomplete="off"></label>
+      <input class="input" id="mate${i}" data-draft="mate" data-i="${i}" list="peopleList" value="${esc(d.mates[i])}" placeholder="隊友（選填，會換手的話）" autocomplete="off" aria-label="${W[i]}位的隊友">
+    </div>`).join('');
+  const opts = [0, 1, 2, 3].map((i) => `<option value="${i}"${d.startDealer === i ? ' selected' : ''}>${W[i]}位${d.names[i] ? '（' + esc(d.names[i]) + '）' : ''}</option>`).join('');
+  return `<section class="panel"><h2>開一場新的</h2>
+    <form class="form" id="setup">
+      <div class="names">${seatForms}</div>${peopleList()}
+      <p class="hint">照抽到的風位填，東、南、西、北就是出牌順序。組隊的話，先上場的人填在名字，隊友填在下面。輸贏各算各的：誰坐著打的那幾把就算誰的。</p>
+      <label class="field"><span class="label">開打地點（選填）</span>
+        <input class="input" id="location" data-draft="location" list="locList" value="${esc(d.location)}" placeholder="例如：阿明家" autocomplete="off"></label>
+      ${locList()}
+      <label class="field"><span class="label">誰先當莊（擲骰子算到的人）</span><select class="input" id="startDealer" data-draft="startDealer">${opts}</select></label>
+      <div class="two">
+        <label class="field"><span class="label">底（元）</span><input class="input num" id="base" data-draft="base" type="number" inputmode="numeric" min="0" value="${d.base}"></label>
+        <label class="field"><span class="label">每台（元）</span><input class="input num" id="perTai" data-draft="perTai" type="number" inputmode="numeric" min="0" value="${d.perTai}"></label>
+      </div>
+      <label class="toggle"><input type="checkbox" id="tsumoTai" data-draft="tsumoTai"${d.tsumoTai ? ' checked' : ''}>
+        <span>自摸自動加 1 台<br><span class="hint">打開後，台數只要填牌面的台，自摸那 1 台 App 會自己加</span></span></label>
+      <label class="toggle"><input type="checkbox" id="dealerTai" data-draft="dealerTai"${d.dealerTai ? ' checked' : ''}>
+        <span>莊家台：跟莊家有關的那筆帳多算 1 台<br><span class="hint">莊家胡、莊家放槍、別人自摸時莊家要付的那份</span></span></label>
+      <label class="toggle"><input type="checkbox" id="drawStreak" data-draft="drawStreak"${d.drawStreak ? ' checked' : ''}>
+        <span>流局時連莊數加 1<br><span class="hint">關掉的話，流局只續莊，連莊數不變</span></span></label>
+      <p class="hint">連莊：莊家胡一把變連 1，連 n 時跟莊家有關的帳加 2n 台（連 n 拉 n）。籌碼以每人 1000 元起算。</p>
+      ${ui.error ? `<p class="error" role="alert">${esc(ui.error)}</p>` : ''}
+      <button type="submit" class="primary">開始</button>
+    </form></section>`;
+}
+
+// 上一場最後的座位（含隊友），開新一場時預先帶入
+MJ.replayLineupSeats = (g) => { const ls = MJ.lineupsOf(g); return ls[ls.length - 1].seats; };
+
+// ---------- 匯出：一把一列，Excel 打得開 ----------
+function buildCsv() {
+  const cell = (v) => {
+    const s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const kind = { ron: '放槍', tsumo: '自摸', draw: '流局' };
+  const head = ['日期', '地點', '開打時間', '第幾把', '記錄時間', '圈局', '莊家', '連莊', '結果', '胡牌', '放槍', '台數'];
+  for (let i = 0; i < 4; i++) head.push(W[i] + '位', W[i] + '位輸贏');
+  const lines = [head];
+  games.slice().sort((a, b) => startOf(a) - startOf(b)).forEach((g) => {
+    const r = MJ.replay(g);
+    const d = new Date(startOf(g));
+    const date = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    r.rows.forEach((row) => {
+      const h = row.hand;
+      const nm = row.names;
+      const line = [date, g.location || '', clock(startOf(g)), row.no, h.t ? clock(h.t) : '',
+        MJ.roundLabel(row.before.rotation), nm[row.before.dealer], row.before.streak, kind[h.type],
+        h.type === 'draw' ? '' : nm[h.winner], h.type === 'ron' ? nm[h.loser] : '', h.type === 'draw' ? '' : h.tai];
+      for (let p = 0; p < 4; p++) line.push(nm[p], row.delta[p]);
+      lines.push(line);
+    });
+  });
+  return '\uFEFF' + lines.map((l) => l.map(cell).join(',')).join('\r\n');
+}
+
+function exportCsv() {
+  const d = new Date();
+  const blob = new Blob([buildCsv()], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `麻將帳本-${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  ui.flash = '已匯出';
+  render();
+}
+
+async function copyLink() {
+  const el = document.getElementById('roomLink');
+  try { await navigator.clipboard.writeText(roomLink()); } catch (e) { el.select(); document.execCommand('copy'); }
+  ui.copied = true;
+  render();
+  setTimeout(() => { ui.copied = false; if (ui.tab === 'history') render(); }, 2500);
+}
+
+// ---------- 操作 ----------
+let armTimer = null;
+function setArmed(key) {
+  ui.armed = key;
+  clearTimeout(armTimer);
+  if (key) armTimer = setTimeout(() => { ui.armed = null; render(); }, 4000);
+}
+
+function doArmed(key) {
+  const g = activeGame();
+  if (key === 'end' && g) {
+    const ng = clone(g); ng.endedAt = Date.now(); saveGame(ng);
+    ui.viewId = g.id;
+  } else if (key === 'delhand' && ui.edit) {
+    const vg = viewedGame();
+    const ng = MJ.removeHand(withLineups(vg), ui.edit.index);
+    saveGame(ng);
+    ui.flash = `已刪除第 ${ui.edit.index + 1} 把`;
+    ui.edit = null;
+  } else if (key.startsWith('del:')) {
+    const id = key.slice(4);
+    removeGame(id);
+    if (ui.viewId === id) ui.viewId = null;
+  }
+}
+
+function saveSeats() {
+  const g = activeGame();
+  const sp = ui.seatPanel;
+  const r = MJ.replay(g);
+  const ng = withLineups(g);
+  let seats;
+  let restart = false;
+  let dealer = r.state.dealer;
+  if (sp.mode === 'swap') {
+    seats = clone(sp.seats);
+    const used = new Set(seats.flatMap((s) => s.members));
+    for (let p = 0; p < 4; p++) {
+      const nn = (sp.newNames[p] || '').trim();
+      if (!nn) continue;
+      if (seats[p].members.includes(nn)) { seats[p].on = seats[p].members.indexOf(nn); continue; }
+      if (used.has(nn)) { ui.error = `「${nn}」已經在別的位子了。`; return false; }
+      seats[p].members.push(nn);
+      seats[p].on = seats[p].members.length - 1;
+      used.add(nn);
+    }
+  } else {
+    if (new Set(sp.order).size < 4) { ui.error = '每一隊只能坐一個位子，請檢查有沒有選重複。'; return false; }
+    seats = sp.order.map((j) => clone(r.lineup.seats[j]));
+    restart = true;
+    dealer = sp.dealer;
+  }
+  const at = g.hands.length;
+  const last = ng.lineups[ng.lineups.length - 1];
+  const entry = { from: at, restart, dealer, seats };
+  // 這段還沒打任何一把就再改，直接蓋掉，不留一段空的
+  if (last.from === at && ng.lineups.length > 1) {
+    entry.restart = last.restart || restart;
+    if (!restart) entry.dealer = last.dealer;
+    ng.lineups[ng.lineups.length - 1] = entry;
+  } else if (last.from === at) {
+    ng.lineups[0] = Object.assign(entry, { restart: true, dealer: restart ? dealer : last.dealer });
+  } else {
+    ng.lineups.push(entry);
+  }
+  saveGame(ng);
+  ui.flash = sp.mode === 'swap' ? '已換手' : '已換位子，從東風東局重新開始';
+  return true;
+}
+
+document.addEventListener('click', (ev) => {
+  const tabBtn = ev.target.closest('#tabs button');
+  const btn = tabBtn || ev.target.closest('[data-act]');
+  if (!btn) return;
+  const act = tabBtn ? 'tab' : btn.dataset.act;
+  if (act !== 'arm' && act !== 'rename') setArmed(null);
+  if (!['record', 'arm'].includes(act)) ui.flash = '';
+  const e = btn.dataset.scope === 'edit' ? ui.edit : ui.entry;
+  switch (act) {
+    case 'tab':
+      ui.tab = btn.dataset.tab;
+      ui.edit = null;
+      ui.editMeta = false;
+      if (ui.tab !== 'log') ui.viewId = null;
+      break;
+    case 'type':
+      e.type = btn.dataset.t;
+      if (e.type !== 'ron') e.loser = null;
+      break;
+    case 'pick': {
+      const p = Number(btn.dataset.p);
+      e[btn.dataset.key] = e[btn.dataset.key] === p ? null : p;
+      if (e.loser === e.winner) e.loser = null;
+      break;
+    }
+    case 'seatPick': pickSeat(Number(btn.dataset.p)); break;
+    case 'editMeta': ui.editMeta = true; break;
+    case 'person': {
+      const name = btn.closest('.lead-item').querySelector('.lead-name').textContent;
+      ui.openPerson = ui.openPerson === name ? null : name;
+      break;
+    }
+    case 'tai': e.tai = Math.max(0, e.tai + Number(btn.dataset.d)); break;
+    case 'taiset': e.tai = Number(btn.dataset.n); break;
+    case 'record': {
+      const g = activeGame();
+      const hand = handFrom(ui.entry);
+      if (!g || !hand) return;
+      hand.t = Date.now();
+      const ng = clone(g);
+      ng.hands.push(hand);
+      saveGame(ng);
+      ui.flash = `已記錄第 ${ng.hands.length} 把`;
+      ui.entry = newEntry(ui.entry.type);
+      break;
+    }
+    case 'edit': {
+      const g = viewedGame();
+      const i = Number(btn.dataset.i);
+      const h = g.hands[i];
+      ui.edit = { index: i, type: h.type, winner: h.type === 'draw' ? null : h.winner, loser: h.type === 'ron' ? h.loser : null, tai: h.tai || 0 };
+      render();
+      const el = document.getElementById('editPanel');
+      if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      return;
+    }
+    case 'editSave': {
+      const g = viewedGame();
+      const hand = handFrom(ui.edit);
+      if (!g || !hand) return;
+      const ng = clone(g);
+      hand.t = g.hands[ui.edit.index].t;
+      ng.hands[ui.edit.index] = hand;
+      saveGame(ng);
+      ui.flash = `已修改第 ${ui.edit.index + 1} 把，後面都重算好了`;
+      ui.edit = null;
+      break;
+    }
+    case 'editCancel': ui.edit = null; break;
+    case 'seatOpen': {
+      const r = MJ.replay(activeGame());
+      ui.error = '';
+      ui.seatPanel = btn.dataset.mode === 'swap'
+        ? { mode: 'swap', seats: clone(r.lineup.seats), newNames: ['', '', '', ''] }
+        : { mode: 'redraw', order: [0, 1, 2, 3], dealer: r.state.dealer };
+      break;
+    }
+    case 'swapOn': {
+      const sp = ui.seatPanel;
+      const p = Number(btn.dataset.p);
+      sp.seats[p].on = Number(btn.dataset.k);
+      sp.newNames[p] = '';
+      break;
+    }
+    case 'seatSave':
+      if (saveSeats()) { ui.seatPanel = null; ui.error = ''; }
+      break;
+    case 'seatCancel': ui.seatPanel = null; ui.error = ''; break;
+    case 'arm': {
+      const key = btn.dataset.key;
+      if (ui.armed === key) { setArmed(null); doArmed(key); } else setArmed(key);
+      break;
+    }
+    case 'export':
+      exportCsv();
+      return;
+    case 'newRoom': enterRoom(newRoomCode()); return;
+    case 'joinRoom': {
+      const code = (document.getElementById('joinLink').value.split('#')[1] || '').trim();
+      if (validRoom(code)) { ui.error = ''; enterRoom(code); return; }
+      ui.error = '這不是房間連結。完整的連結後面會有一個 # 和一長串英數字。';
+      break;
+    }
+    case 'copyLink': copyLink(); return;
+    case 'rename': doRename(); break;
+    case 'saveLoc': {
+      const g = viewedGame();
+      if (!g) return;
+      const ng = clone(g);
+      ng.location = document.getElementById('locEdit').value.trim();
+      const hm = document.getElementById('startEdit').value;
+      if (/^\d\d:\d\d$/.test(hm)) {
+        const d = new Date(g.createdAt);
+        d.setHours(Number(hm.slice(0, 2)), Number(hm.slice(3)), 0, 0);
+        let s = d.getTime();
+        // 開打時間比第一把還晚，代表是前一天開始的（打過午夜）
+        const first = g.hands.length ? g.hands[0].t : null;
+        if (first && s > first) s -= 24 * 3600 * 1000;
+        ng.startedAt = s;
+      }
+      saveGame(ng);
+      ui.flash = '已儲存';
+      ui.editMeta = false;
+      break;
+    }
+    case 'open':
+      ui.viewId = btn.dataset.id;
+      ui.tab = 'log';
+      ui.edit = null;
+      break;
+  }
+  render();
+});
+
+document.addEventListener('input', (ev) => {
+  const el = ev.target;
+  if (!el.dataset) return;
+  if (el.dataset.rn) {
+    ui.rename[el.dataset.rn] = el.value;
+    // 改了輸入就要重新確認一次合併
+    if (ui.armed === 'rename') { setArmed(null); render(); }
+    return;
+  }
+  if (el.dataset.sp && ui.seatPanel) {
+    const sp = ui.seatPanel;
+    if (el.dataset.sp === 'newName') sp.newNames[Number(el.dataset.p)] = el.value;
+    return;
+  }
+  if (!el.dataset.draft || !ui.draft) return;
+  const d = ui.draft;
+  const k = el.dataset.draft;
+  if (k === 'name') d.names[Number(el.dataset.i)] = el.value;
+  else if (k === 'mate') d.mates[Number(el.dataset.i)] = el.value;
+  else if (k === 'location') d.location = el.value;
+  else if (k === 'startDealer') d.startDealer = Number(el.value);
+  else if (k === 'base' || k === 'perTai') d[k] = Number(el.value);
+  else d[k] = el.checked;
+});
+
+document.addEventListener('change', (ev) => {
+  const el = ev.target;
+  if (el.dataset.filter) { ui.filter[el.dataset.filter] = el.value; render(); return; }
+  if (el.dataset.sp && ui.seatPanel) {
+    const sp = ui.seatPanel;
+    if (el.dataset.sp === 'order') sp.order[Number(el.dataset.k)] = Number(el.value);
+    if (el.dataset.sp === 'dealer') sp.dealer = Number(el.value);
+    render();
+  }
+});
+
+document.addEventListener('submit', (ev) => {
+  if (ev.target.id !== 'setup') return;
+  ev.preventDefault();
+  const d = ui.draft;
+  const names = d.names.map((n) => n.trim());
+  const mates = d.mates.map((n) => n.trim());
+  const all = names.concat(mates.filter(Boolean));
+  if (names.some((n) => !n)) ui.error = '四個位子都要填名字。';
+  else if (new Set(all).size < all.length) ui.error = '名字不能重複，不然戰績會混在一起。';
+  else if (!(d.base >= 0) || !(d.perTai >= 0)) ui.error = '底和每台要填 0 以上的數字。';
+  else {
+    ui.error = '';
+    const t = Date.now();
+    saveGame({
+      id: 'g' + t.toString(36), createdAt: t, endedAt: null, location: (d.location || '').trim(),
+      settings: { base: d.base, perTai: d.perTai, tsumoTai: d.tsumoTai, dealerTai: d.dealerTai, drawStreak: d.drawStreak },
+      lineups: [{ from: 0, restart: true, dealer: d.startDealer, seats: names.map((n, i) => ({ members: mates[i] ? [n, mates[i]] : [n], on: 0 })) }],
+      hands: [],
+    });
+    ui.draft = null;
+    ui.entry = newEntry();
+  }
+  render();
+});
+
+boot();
+</script>
+</body>
+</html>
