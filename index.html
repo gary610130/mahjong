@@ -228,6 +228,8 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .hint { font-size: 0.8rem; color: var(--muted); }
 .error { color: var(--loss); font-size: 0.88rem; }
 @media (prefers-reduced-motion: no-preference) { .chip, .seg button, .tabs button { transition: background 0.15s; } }
+.settle { background: var(--bg); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; }
+.settle ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 2px; }
 .share { display: flex; gap: 8px; }
 .share .input { flex: 1; min-width: 0; font-size: 0.85rem; }
 .landing { display: grid; gap: 14px; max-width: 32rem; margin: 6vh auto 0; text-align: center; }
@@ -648,6 +650,38 @@ function changeText(r, c) {
   return '換手：' + (diff.join('；') || '座位不變');
 }
 
+// ---------- 結算：照位子（隊伍）算錢，再算出最少次數的付款 ----------
+const teamLabel = (t) => t.members.join('／');
+const teamsOf = (r) => Object.values(r.teams).filter((t) => t.net || r.lineup.seats.some((s) => s.members[0] === t.id));
+
+function transfers(teams) {
+  const debt = teams.filter((t) => t.net < 0).map((t) => ({ who: teamLabel(t), left: -t.net })).sort((a, b) => b.left - a.left);
+  const cred = teams.filter((t) => t.net > 0).map((t) => ({ who: teamLabel(t), left: t.net })).sort((a, b) => b.left - a.left);
+  const out = [];
+  let i = 0;
+  let j = 0;
+  while (i < debt.length && j < cred.length) {
+    const amt = Math.min(debt[i].left, cred[j].left);
+    out.push({ from: debt[i].who, to: cred[j].who, amt });
+    debt[i].left -= amt;
+    cred[j].left -= amt;
+    if (!debt[i].left) i += 1;
+    if (!cred[j].left) j += 1;
+  }
+  return out;
+}
+
+function settlementHtml(r) {
+  const teams = teamsOf(r).sort((a, b) => b.net - a.net);
+  const rows = teams.map((t) => `<tr><td>${esc(teamLabel(t))}</td>
+    <td class="num ${t.net ? cls(t.net) : 'zero'}"><b>${t.net ? money(t.net) : '±0'}</b></td></tr>`).join('');
+  const pays = transfers(teams).map((x) =>
+    `<li><b>${esc(x.from)}</b> 付給 <b>${esc(x.to)}</b> <span class="num">${x.amt.toLocaleString('en-US')}</span> 元</li>`).join('');
+  return `<h3>結算（每個位子）</h3>
+    <div class="scroll"><table class="grid"><thead><tr><th>位子／隊伍</th><th>輸贏</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${pays ? `<div class="settle"><span class="label">這樣付最省事</span><ul>${pays}</ul></div>` : ''}`;
+}
+
 function viewLog() {
   const g = viewedGame();
   if (!g) return '<p class="empty">目前沒有進行中的牌局。到「牌局」開一場新的，或到「戰績」看以前的紀錄。</p>';
@@ -660,8 +694,7 @@ function viewLog() {
     <td class="num">${o.win}</td><td class="num">${o.tsumo}</td><td class="num">${o.deal}</td></tr>`;
   }).join('');
   // 有組隊時另外列出每隊合計，結帳看這個
-  const teamRows = Object.values(r.teams).filter((t) => t.members.length > 1).map((t) =>
-    `<tr><td>${t.members.map(esc).join('／')}</td><td class="num ${cls(t.net)}"><b>${money(t.net) || '0'}</b></td></tr>`).join('');
+  const settle = settlementHtml(r);
 
   // 每一把的列表，新的在上面；換手或重新抽位子的地方插一行說明
   const items = [];
@@ -708,8 +741,9 @@ function viewLog() {
         <button type="button" class="link" data-act="editMeta">編輯</button></div>`}
       ${ui.flash && ui.tab === 'log' ? `<div class="flash" role="status">${esc(ui.flash)}</div>` : ''}
       <div class="hint">底 ${s.base}／每台 ${s.perTai} · 自摸加台${s.tsumoTai !== false ? '開' : '關'} · 莊家台${s.dealerTai ? '開' : '關'} · 流局${s.drawStreak ? '加連莊' : '不加連莊'}</div>
+      ${settle}
+      <h3>個人紀錄</h3>
       <div class="scroll"><table class="grid"><thead><tr><th>玩家</th><th>輸贏</th><th>把數</th><th>胡</th><th>自摸</th><th>放槍</th></tr></thead><tbody>${statRows}</tbody></table></div>
-      ${teamRows ? `<div class="scroll"><table class="grid"><thead><tr><th>隊伍（結帳用）</th><th>合計</th></tr></thead><tbody>${teamRows}</tbody></table></div>` : ''}
       ${actions}
     </section>
     ${chart ? `<section class="panel"><h2>這一場的走勢</h2>${chart}</section>` : ''}
@@ -938,8 +972,8 @@ function viewHistory() {
   const cards = fg.slice().reverse().map(({ id }) => {
     const g = games.find((x) => x.id === id);
     const r = MJ.replay(g);
-    const nets = r.order.filter((n) => r.people[n].hands).map((n) =>
-      `<span>${esc(n)} <b class="num ${cls(r.people[n].net)}">${money(r.people[n].net)}</b></span>`).join('');
+    const nets = teamsOf(r).sort((a, b) => b.net - a.net).map((t) =>
+      `<span>${esc(teamLabel(t))} <b class="num ${cls(t.net)}">${money(t.net)}</b></span>`).join('');
     return `<div class="game"><div class="game-head"><b>${dateLabel(startOf(g))} 牌局${g.location ? ' · ' + esc(g.location) : ''}</b>
         <span class="status${g.endedAt ? '' : ' live'}">${g.endedAt ? '已結束' : '進行中'}</span></div>
       <div class="hint num">${timeLabel(g)} · ${MJ.progressLabel(MJ.totalRotation(g))}（${g.hands.length} 把）</div>
