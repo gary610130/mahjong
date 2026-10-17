@@ -468,7 +468,7 @@ function seatHtml(r, p) {
   const name = seat.members[seat.on];
   const isDealer = st.dealer === p;
   // 同一隊共用一份錢，卡片大字顯示全隊；個人輸贏另外記，用小字列出
-  const teamNet = seat.members.reduce((a, n) => a + r.people[n].net, 0);
+  const teamNet = r.teams[seat.members[0]] ? r.teams[seat.members[0]].net : 0;
   const mates = seat.members.filter((n) => n !== name);
   const e = ui.entry;
   const win = e.type !== 'draw' && e.winner === p;
@@ -660,14 +660,8 @@ function viewLog() {
     <td class="num">${o.win}</td><td class="num">${o.tsumo}</td><td class="num">${o.deal}</td></tr>`;
   }).join('');
   // 有組隊時另外列出每隊合計，結帳看這個
-  const teams = [];
-  MJ.lineupsOf(g).forEach((l) => l.seats.forEach((seat) => {
-    if (seat.members.length > 1 && !teams.some((t) => t.join() === seat.members.join())) teams.push(seat.members.slice());
-  }));
-  const teamRows = teams.map((t) => {
-    const net = t.reduce((a, n) => a + r.people[n].net, 0);
-    return `<tr><td>${t.map(esc).join('／')}</td><td class="num ${cls(net)}"><b>${money(net) || '0'}</b></td></tr>`;
-  }).join('');
+  const teamRows = Object.values(r.teams).filter((t) => t.members.length > 1).map((t) =>
+    `<tr><td>${t.members.map(esc).join('／')}</td><td class="num ${cls(t.net)}"><b>${money(t.net) || '0'}</b></td></tr>`).join('');
 
   // 每一把的列表，新的在上面；換手或重新抽位子的地方插一行說明
   const items = [];
@@ -1146,7 +1140,17 @@ function saveSeats() {
       const nn = (sp.newNames[p] || '').trim();
       if (!nn) continue;
       if (seats[p].members.includes(nn)) { seats[p].on = seats[p].members.indexOf(nn); continue; }
-      if (used.has(nn)) { ui.error = `「${nn}」已經在別的位子了。`; return false; }
+      if (used.has(nn)) {
+        // 掛名在別隊、沒在上場的隊友可以換過來；他之前打的錢留在原本那隊
+        const q = seats.findIndex((s) => s.members.includes(nn));
+        const from = seats[q];
+        if (from.members[from.on] === nn) { ui.error = `「${nn}」現在正在${W[q]}位上場，要先讓他下場才能換過來。`; return false; }
+        if (from.members[0] === nn) { ui.error = `「${nn}」是${W[q]}位那一隊的主要成員，不能換到別隊。`; return false; }
+        const k = from.members.indexOf(nn);
+        from.members.splice(k, 1);
+        if (k < from.on) from.on -= 1;
+        used.delete(nn);
+      }
       seats[p].members.push(nn);
       seats[p].on = seats[p].members.length - 1;
       used.add(nn);

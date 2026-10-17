@@ -65,6 +65,16 @@
       return people[name];
     };
     lineups.forEach((l) => l.seats.forEach((seat) => seat.members.forEach(person)));
+    // 隊伍以第一位成員當代號；每一把的錢記給當時那個位子的隊伍，
+    // 隊友中途換到別隊也不會把舊隊的錢帶過去
+    const teams = {};
+    const team = (seat) => {
+      const id = seat.members[0];
+      if (!teams[id]) teams[id] = { id, members: [], net: 0 };
+      teams[id].members = seat.members.slice(); // 依序套用，最後留下的是最新的隊員名單
+      return teams[id];
+    };
+    lineups.forEach((l) => l.seats.forEach(team));
 
     let li = -1;
     let lineup = null;
@@ -90,6 +100,7 @@
         o.net += r.delta[p];
         if (r.delta[p] > o.maxWin) o.maxWin = r.delta[p];
         if (r.delta[p] < o.maxLoss) o.maxLoss = r.delta[p];
+        teams[lineup.seats[p].members[0]].net += r.delta[p];
       });
       if (hand.type !== 'draw') {
         const w = person(names[hand.winner]);
@@ -104,7 +115,7 @@
     });
     applyLineups(hands.length);
 
-    return { rows, people, order, state: st, lineup, changes };
+    return { rows, people, order, teams, state: st, lineup, changes };
   }
 
   // 圈從東風開始，每換一次莊往下一局，四局一圈
