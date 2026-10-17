@@ -467,7 +467,7 @@ function seatHtml(r, p) {
   const seat = r.lineup.seats[p];
   const name = seat.members[seat.on];
   const isDealer = st.dealer === p;
-  const net = r.people[name].net;
+  // 同一隊共用一份錢，卡片大字顯示全隊；個人輸贏另外記，用小字列出
   const teamNet = seat.members.reduce((a, n) => a + r.people[n].net, 0);
   const mates = seat.members.filter((n) => n !== name);
   const e = ui.entry;
@@ -479,8 +479,9 @@ function seatHtml(r, p) {
       data-act="seatPick" data-p="${p}"${e.type === 'draw' || ui.seatPanel ? ' disabled' : ''} aria-pressed="${win || lose}">
     <span class="seat-top"><span class="wind">${W[p]}</span><span class="seat-name">${esc(name)}</span>${tag || badge}</span>
     ${mates.length ? `<span class="seat-mate">隊友 ${mates.map(esc).join('、')}</span>` : ''}
-    <span class="seat-net num ${net ? cls(net) : 'zero'}">${net ? money(net) : '±0'}</span>
-    <span class="seat-chips num">籌碼 ${(1000 + teamNet).toLocaleString('en-US')}${mates.length ? '（全隊）' : ''}</span>
+    <span class="seat-net num ${teamNet ? cls(teamNet) : 'zero'}">${teamNet ? money(teamNet) : '±0'}</span>
+    ${mates.length ? `<span class="seat-chips num">${seat.members.map((n) => `${esc(n)} ${money(r.people[n].net) || '0'}`).join(' · ')}</span>` : ''}
+    <span class="seat-chips num">籌碼 ${(1000 + teamNet).toLocaleString('en-US')}</span>
   </button>`;
 }
 
@@ -658,6 +659,15 @@ function viewLog() {
     <td class="num ${cls(o.net)}"><b>${money(o.net)}</b></td><td class="num">${o.hands}</td>
     <td class="num">${o.win}</td><td class="num">${o.tsumo}</td><td class="num">${o.deal}</td></tr>`;
   }).join('');
+  // 有組隊時另外列出每隊合計，結帳看這個
+  const teams = [];
+  MJ.lineupsOf(g).forEach((l) => l.seats.forEach((seat) => {
+    if (seat.members.length > 1 && !teams.some((t) => t.join() === seat.members.join())) teams.push(seat.members.slice());
+  }));
+  const teamRows = teams.map((t) => {
+    const net = t.reduce((a, n) => a + r.people[n].net, 0);
+    return `<tr><td>${t.map(esc).join('／')}</td><td class="num ${cls(net)}"><b>${money(net) || '0'}</b></td></tr>`;
+  }).join('');
 
   // 每一把的列表，新的在上面；換手或重新抽位子的地方插一行說明
   const items = [];
@@ -705,6 +715,7 @@ function viewLog() {
       ${ui.flash && ui.tab === 'log' ? `<div class="flash" role="status">${esc(ui.flash)}</div>` : ''}
       <div class="hint">底 ${s.base}／每台 ${s.perTai} · 自摸加台${s.tsumoTai !== false ? '開' : '關'} · 莊家台${s.dealerTai ? '開' : '關'} · 流局${s.drawStreak ? '加連莊' : '不加連莊'}</div>
       <div class="scroll"><table class="grid"><thead><tr><th>玩家</th><th>輸贏</th><th>把數</th><th>胡</th><th>自摸</th><th>放槍</th></tr></thead><tbody>${statRows}</tbody></table></div>
+      ${teamRows ? `<div class="scroll"><table class="grid"><thead><tr><th>隊伍（結帳用）</th><th>合計</th></tr></thead><tbody>${teamRows}</tbody></table></div>` : ''}
       ${actions}
     </section>
     ${chart ? `<section class="panel"><h2>這一場的走勢</h2>${chart}</section>` : ''}
