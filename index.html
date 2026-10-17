@@ -228,9 +228,9 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .hint { font-size: 0.8rem; color: var(--muted); }
 .error { color: var(--loss); font-size: 0.88rem; }
 @media (prefers-reduced-motion: no-preference) { .chip, .seg button, .tabs button { transition: background 0.15s; } }
-.rate { color: var(--muted); font-size: 0.78rem; margin-left: 4px; }
-.settle { background: var(--bg); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; }
-.settle ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 2px; }
+/* 比例放在次數下面一行，表格才不會太寬 */
+.rate { display: block; color: var(--muted); font-size: 0.74rem; line-height: 1.2; }
+.seg.seg-2 { grid-template-columns: repeat(2, 1fr); }
 .share { display: flex; gap: 8px; }
 .share .input { flex: 1; min-width: 0; font-size: 0.85rem; }
 .landing { display: grid; gap: 14px; max-width: 32rem; margin: 6vh auto 0; text-align: center; }
@@ -655,32 +655,12 @@ function changeText(r, c) {
 const teamLabel = (t) => t.members.join('／');
 const teamsOf = (r) => Object.values(r.teams).filter((t) => t.net || r.lineup.seats.some((s) => s.members[0] === t.id));
 
-function transfers(teams) {
-  const debt = teams.filter((t) => t.net < 0).map((t) => ({ who: teamLabel(t), left: -t.net })).sort((a, b) => b.left - a.left);
-  const cred = teams.filter((t) => t.net > 0).map((t) => ({ who: teamLabel(t), left: t.net })).sort((a, b) => b.left - a.left);
-  const out = [];
-  let i = 0;
-  let j = 0;
-  while (i < debt.length && j < cred.length) {
-    const amt = Math.min(debt[i].left, cred[j].left);
-    out.push({ from: debt[i].who, to: cred[j].who, amt });
-    debt[i].left -= amt;
-    cred[j].left -= amt;
-    if (!debt[i].left) i += 1;
-    if (!cred[j].left) j += 1;
-  }
-  return out;
-}
-
 function settlementHtml(r) {
   const teams = teamsOf(r).sort((a, b) => b.net - a.net);
   const rows = teams.map((t) => `<tr><td>${esc(teamLabel(t))}</td>
     <td class="num ${t.net ? cls(t.net) : 'zero'}"><b>${t.net ? money(t.net) : '±0'}</b></td></tr>`).join('');
-  const pays = transfers(teams).map((x) =>
-    `<li><b>${esc(x.from)}</b> 付給 <b>${esc(x.to)}</b> <span class="num">${x.amt.toLocaleString('en-US')}</span> 元</li>`).join('');
   return `<h3>結算（每個位子）</h3>
-    <div class="scroll"><table class="grid"><thead><tr><th>位子／隊伍</th><th>輸贏</th></tr></thead><tbody>${rows}</tbody></table></div>
-    ${pays ? `<div class="settle"><span class="label">這樣付最省事</span><ul>${pays}</ul></div>` : ''}`;
+    <div class="scroll"><table class="grid"><thead><tr><th>位子／隊伍</th><th>輸贏</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function viewLog() {
@@ -750,7 +730,7 @@ function viewLog() {
       ${settle}
       <h3>個人紀錄</h3>
       <div class="scroll"><table class="grid"><thead><tr><th>玩家</th><th>輸贏</th><th>把數</th><th>胡</th><th>自摸</th><th>放槍</th><th>平均台</th><th>單把最多贏</th><th>單把最多輸</th><th>最高連莊</th></tr></thead><tbody>${statRows}</tbody></table></div>
-      <p class="hint">胡、自摸、放槍後面的小字是比例，分母是他有上桌的把數。表格可以左右滑。</p>
+      <p class="hint">胡、自摸、放槍下面的小字是比例，分母是他有上桌的把數。表格可以左右滑。</p>
       ${actions}
     </section>
     ${chart ? `<section class="panel"><h2>這一場的走勢</h2>${chart}</section>` : ''}
@@ -873,19 +853,26 @@ window.addEventListener('resize', () => {
   if (svg) showTip(svg, ev.clientX); else hideTips();
 }));
 
+// 單場走勢：可以看每個位子（隊伍）或每個人
 function gameChart(g, r) {
   if (g.hands.length < 1) return '';
+  const byTeam = ui.chartBy !== 'person';
+  const lineups = MJ.lineupsOf(g);
+  const keys = byTeam ? teamsOf(r).map((t) => t.id) : r.order.filter((n) => r.people[n].hands);
   const run = {};
-  r.order.forEach((n) => { run[n] = [0]; });
+  keys.forEach((k) => { run[k] = [0]; });
   r.rows.forEach((row) => {
-    r.order.forEach((n) => {
-      const p = row.names.indexOf(n);
-      const prev = run[n][run[n].length - 1];
-      run[n].push(prev + (p >= 0 ? row.delta[p] : 0));
+    const step = {};
+    row.names.forEach((n, p) => {
+      const k = byTeam ? lineups[row.lineupIndex].seats[p].members[0] : n;
+      step[k] = (step[k] || 0) + row.delta[p];
     });
+    keys.forEach((k) => { run[k].push(run[k][run[k].length - 1] + (step[k] || 0)); });
   });
   const labels = [{ short: '開始', long: '開始' }].concat(r.rows.map((row) => ({ short: String(row.no), long: `第 ${row.no} 把` })));
-  return lineChart(r.order.map((n) => ({ name: n, color: colorOf(n), values: run[n] })), labels);
+  const series = keys.map((k) => ({ name: byTeam ? teamLabel(r.teams[k]) : k, color: colorOf(k), values: run[k] }));
+  const btn = (v, label) => `<button type="button" data-act="chartBy" data-v="${v}" aria-pressed="${(ui.chartBy || 'team') === v}">${label}</button>`;
+  return `<div class="seg seg-2">${btn('team', '看位子（隊伍）')}${btn('person', '看個人')}</div>${lineChart(series, labels)}`;
 }
 
 // ---------- 戰績 ----------
@@ -1247,6 +1234,7 @@ document.addEventListener('click', (ev) => {
     }
     case 'seatPick': pickSeat(Number(btn.dataset.p)); break;
     case 'editMeta': ui.editMeta = true; break;
+    case 'chartBy': ui.chartBy = btn.dataset.v; break;
     case 'person': {
       const name = btn.closest('.lead-item').querySelector('.lead-name').textContent;
       ui.openPerson = ui.openPerson === name ? null : name;
