@@ -228,6 +228,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .hint { font-size: 0.8rem; color: var(--muted); }
 .error { color: var(--loss); font-size: 0.88rem; }
 @media (prefers-reduced-motion: no-preference) { .chip, .seg button, .tabs button { transition: background 0.15s; } }
+.rate { color: var(--muted); font-size: 0.78rem; margin-left: 4px; }
 .settle { background: var(--bg); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; }
 .settle ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 2px; }
 .share { display: flex; gap: 8px; }
@@ -687,11 +688,16 @@ function viewLog() {
   if (!g) return '<p class="empty">目前沒有進行中的牌局。到「牌局」開一場新的，或到「戰績」看以前的紀錄。</p>';
   const r = MJ.replay(g);
   const s = g.settings;
+  // 次數後面附上比例（以他有上桌的把數為分母）
+  const rate = (a, b) => `${a}<span class="rate">${b ? Math.round((a / b) * 100) + '%' : '—'}</span>`;
   const statRows = r.order.map((n) => {
     const o = r.people[n];
     return `<tr><td><span class="dot" style="background:${colorOf(n)}"></span>${esc(n)}</td>
     <td class="num ${cls(o.net)}"><b>${money(o.net)}</b></td><td class="num">${o.hands}</td>
-    <td class="num">${o.win}</td><td class="num">${o.tsumo}</td><td class="num">${o.deal}</td></tr>`;
+    <td class="num">${rate(o.win, o.hands)}</td><td class="num">${rate(o.tsumo, o.hands)}</td><td class="num">${rate(o.deal, o.hands)}</td>
+    <td class="num">${o.win ? (o.taiSum / o.win).toFixed(1) : '—'}</td>
+    <td class="num gain">${o.maxWin ? money(o.maxWin) : '—'}</td><td class="num loss">${o.maxLoss ? money(o.maxLoss) : '—'}</td>
+    <td class="num">${o.maxStreak ? '連' + o.maxStreak : '—'}</td></tr>`;
   }).join('');
   // 有組隊時另外列出每隊合計，結帳看這個
   const settle = settlementHtml(r);
@@ -743,7 +749,8 @@ function viewLog() {
       <div class="hint">底 ${s.base}／每台 ${s.perTai} · 自摸加台${s.tsumoTai !== false ? '開' : '關'} · 莊家台${s.dealerTai ? '開' : '關'} · 流局${s.drawStreak ? '加連莊' : '不加連莊'}</div>
       ${settle}
       <h3>個人紀錄</h3>
-      <div class="scroll"><table class="grid"><thead><tr><th>玩家</th><th>輸贏</th><th>把數</th><th>胡</th><th>自摸</th><th>放槍</th></tr></thead><tbody>${statRows}</tbody></table></div>
+      <div class="scroll"><table class="grid"><thead><tr><th>玩家</th><th>輸贏</th><th>把數</th><th>胡</th><th>自摸</th><th>放槍</th><th>平均台</th><th>單把最多贏</th><th>單把最多輸</th><th>最高連莊</th></tr></thead><tbody>${statRows}</tbody></table></div>
+      <p class="hint">胡、自摸、放槍後面的小字是比例，分母是他有上桌的把數。表格可以左右滑。</p>
       ${actions}
     </section>
     ${chart ? `<section class="panel"><h2>這一場的走勢</h2>${chart}</section>` : ''}
