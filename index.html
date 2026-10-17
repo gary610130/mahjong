@@ -1030,11 +1030,11 @@ function doRename() {
 
 function viewSetup() {
   if (!ui.draft) {
+    // 每次開新的一場都從空白開始，要沿用上一場的人再按按鈕帶入
     const last = games.slice().sort(byNewest)[0];
-    const seats = last ? MJ.replayLineupSeats(last) : null;
     ui.draft = {
-      names: seats ? seats.map((s) => s.members[0] || '') : ['', '', '', ''],
-      mates: seats ? seats.map((s) => s.members[1] || '') : ['', '', '', ''],
+      names: ['', '', '', ''],
+      mates: ['', '', '', ''],
       location: '',
       startDealer: 0,
       base: last ? last.settings.base : 50,
@@ -1053,8 +1053,11 @@ function viewSetup() {
   const opts = [0, 1, 2, 3].map((i) => `<option value="${i}"${d.startDealer === i ? ' selected' : ''}>${W[i]}位${d.names[i] ? '（' + esc(d.names[i]) + '）' : ''}</option>`).join('');
   return `<section class="panel"><h2>開一場新的</h2>
     <form class="form" id="setup">
+      ${games.length ? `<div class="links" style="justify-content:flex-start">
+        <button type="button" class="link" data-act="fillLast">帶入上一場的座位</button>
+        <button type="button" class="link" data-act="clearNames">清空名字</button></div>` : ''}
       <div class="names">${seatForms}</div>${peopleList()}
-      <p class="hint">照抽到的風位填，東、南、西、北就是出牌順序。組隊的話，先上場的人填在名字，隊友填在下面。輸贏各算各的：誰坐著打的那幾把就算誰的。</p>
+      <p class="hint">照抽到的風位填，東、南、西、北就是出牌順序。打字時會跳出以前用過的名字可以直接點。組隊的話，先上場的人填在名字，隊友填在下面；錢照位子一起算，個人戰績另外記。</p>
       <label class="field"><span class="label">開打地點（選填）</span>
         <input class="input" id="location" data-draft="location" list="locList" value="${esc(d.location)}" placeholder="例如：阿明家" autocomplete="off"></label>
       ${locList()}
@@ -1234,6 +1237,17 @@ document.addEventListener('click', (ev) => {
     }
     case 'seatPick': pickSeat(Number(btn.dataset.p)); break;
     case 'editMeta': ui.editMeta = true; break;
+    case 'fillLast': {
+      const last = games.slice().sort(byNewest)[0];
+      if (!last || !ui.draft) break;
+      const seats = MJ.replayLineupSeats(last);
+      ui.draft.names = seats.map((s) => s.members[0] || '');
+      ui.draft.mates = seats.map((s) => s.members[1] || '');
+      break;
+    }
+    case 'clearNames':
+      if (ui.draft) { ui.draft.names = ['', '', '', '']; ui.draft.mates = ['', '', '', '']; }
+      break;
     case 'chartBy': ui.chartBy = btn.dataset.v; break;
     case 'person': {
       const name = btn.closest('.lead-item').querySelector('.lead-name').textContent;
@@ -1359,7 +1373,13 @@ document.addEventListener('input', (ev) => {
   if (!el.dataset.draft || !ui.draft) return;
   const d = ui.draft;
   const k = el.dataset.draft;
-  if (k === 'name') d.names[Number(el.dataset.i)] = el.value;
+  if (k === 'name') {
+    const i = Number(el.dataset.i);
+    d.names[i] = el.value;
+    // 「誰先當莊」的選項跟著名字即時更新，不用等整頁重畫
+    const opt = document.querySelector(`#startDealer option[value="${i}"]`);
+    if (opt) opt.textContent = W[i] + '位' + (el.value.trim() ? '（' + el.value.trim() + '）' : '');
+  }
   else if (k === 'mate') d.mates[Number(el.dataset.i)] = el.value;
   else if (k === 'location') d.location = el.value;
   else if (k === 'startDealer') d.startDealer = Number(el.value);
