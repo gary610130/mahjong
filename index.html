@@ -254,7 +254,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js"></script>
+<script src="logic.js?v=202610181530"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -1424,7 +1424,22 @@ document.addEventListener('submit', (ev) => {
   render();
 });
 
+// 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
+const APP_VERSION = '202610181530';
+async function checkUpdate() {
+  try {
+    const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
+    const m = (await res.text()).match(/APP_VERSION = '(\d+)'/);
+    if (!m || m[1] === APP_VERSION) return;
+    if (new URLSearchParams(location.search).get('v') === m[1]) return; // 已經試過一次就不再重來，避免一直重載
+    if (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    location.replace(location.pathname + '?v=' + m[1] + location.hash);
+  } catch (e) { /* 沒網路就照用舊版 */ }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
+
 boot();
+checkUpdate();
 </script>
 </body>
 </html>
