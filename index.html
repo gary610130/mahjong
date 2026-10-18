@@ -670,7 +670,8 @@ function viewLog() {
   const s = g.settings;
   // 次數後面附上比例（以他有上桌的把數為分母）
   const rate = (a, b) => `${a}<span class="rate">${b ? Math.round((a / b) * 100) + '%' : '—'}</span>`;
-  const statRows = r.order.map((n) => {
+  // 有寫進隊伍但一把都沒上桌的人不列出來，跟走勢圖一致
+  const statRows = r.order.filter((n) => r.people[n].hands).map((n) => {
     const o = r.people[n];
     return `<tr><td><span class="dot" style="background:${colorOf(n)}"></span>${esc(n)}</td>
     <td class="num ${cls(o.net)}"><b>${money(o.net)}</b></td><td class="num">${o.hands}</td>
