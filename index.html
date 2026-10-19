@@ -267,8 +267,10 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .table-rules { display: none; }
 .settle-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 @media (min-width: 640px) { .settle-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.settle-card { background: var(--surface-sub); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.settle-card b { font-size: 1.15rem; font-weight: 800; }
+.settle-card { background: var(--surface-sub); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; align-content: space-between; min-width: 0; }
+.settle-name { font-weight: 700; font-size: 0.92rem; line-height: 1.35; word-break: keep-all; overflow-wrap: normal; }
+.settle-name > span { display: inline-block; white-space: nowrap; }
+.settle-card b { font-size: 1.25rem; font-weight: 800; line-height: 1.2; }
 .log-grid, .history-grid, .hist-tools { display: grid; gap: 18px; }
 .seat-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 0.74rem; color: var(--muted); overflow: hidden; white-space: nowrap; }
 .seat-foot > span { overflow: hidden; text-overflow: ellipsis; }
@@ -364,7 +366,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191859"></script>
+<script src="logic.js?v=202610191900"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -854,11 +856,12 @@ function changeText(r, c) {
 
 // ---------- 結算：照位子（隊伍）算錢，再算出最少次數的付款 ----------
 const teamLabel = (t) => t.members.join('／');
+const settleTeamHtml = (t) => t.members.map((m, i) => `<span>${esc(m)}${i < t.members.length - 1 ? '／' : ''}</span>`).join('<wbr>');
 const teamsOf = (r) => Object.values(r.teams).filter((t) => t.net || r.lineup.seats.some((s) => s.members[0] === t.id));
 
 function settlementHtml(r) {
   const teams = teamsOf(r).sort((a, b) => b.net - a.net);
-  const cards = teams.map((t) => `<div class="settle-card"><span>${esc(teamLabel(t))}</span>
+  const cards = teams.map((t) => `<div class="settle-card"><span class="settle-name">${settleTeamHtml(t)}</span>
     <b class="num ${t.net ? cls(t.net) : 'zero'}">${t.net ? money(t.net) : '±0'}</b></div>`).join('');
   return `<h3>結算（每個位子）</h3>
     <div class="settle-cards">${cards}</div>`;
@@ -1694,7 +1697,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191859';
+const APP_VERSION = '202610191900';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
