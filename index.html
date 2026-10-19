@@ -248,7 +248,7 @@ table.heat { border-collapse: separate; border-spacing: 3px; font-size: 0.88rem;
 .loc-row .ghost { min-height: 46px; }
 /* iOS 的時間欄位有自己的最小寬度，要拿掉原生外觀才不會撐出畫面 */
 input[type="time"].input { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; display: block; min-height: 46px; text-align: left; }
-.names { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 12px; }
+.names { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 12px; }
 .seat-form { display: grid; grid-template-columns: 1.6em minmax(0, 1.3fr) minmax(0, 1fr); gap: 8px; align-items: center; }
 .seat-form-wind { font-family: var(--font-display); font-weight: 900; font-size: 1.1rem; color: var(--muted); text-align: center; }
 .input { border: 1.5px solid var(--line-strong); background: var(--surface); border-radius: 10px; min-height: 44px; padding: 8px 12px; width: 100%; }
@@ -376,7 +376,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191926"></script>
+<script src="logic.js?v=202610191929"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -635,12 +635,12 @@ function seatHtml(r, p) {
   const lose = (e.type === 'ron' || e.type === 'triple') && e.loser === p;
   const tag = win ? `<span class="tag">${e.type === 'tsumo' ? '自摸' : '胡'}</span>` : lose ? '<span class="tag lose">放槍</span>' : '';
   // 連莊數已經寫在上面的局況列，卡片上只標「莊」，留位置給名字
-  const badge = isDealer ? `<span class="badge" title="${st.streak ? '連' + st.streak : ''}">莊</span>` : '';
+  const badge = isDealer ? '<span class="badge">莊</span>' : '';
   const tagsHtml = badge || tag ? `<span class="seat-tags">${badge}${tag}</span>` : '';
   const mateInfo = mates.length ? `<span>隊友 ${mates.map((n) => `${esc(n)}(${money(r.people[n].net) || '0'})`).join('·')}</span>` : '<span></span>';
   return `<button type="button" class="seat${isDealer ? ' dealer' : ''}${win ? ' pick-win' : ''}${lose ? ' pick-lose' : ''}" style="grid-area:s${p}"
       data-act="seatPick" data-p="${p}"${e.type === 'draw' || ui.seatPanel ? ' disabled' : ''} aria-pressed="${win || lose}">
-    <span class="seat-top"><span class="wind">${W[p]}</span><span class="seat-name">${esc(name)}</span>${tagsHtml}</span>
+    <span class="seat-top"><span class="wind">${W[p]}</span><span class="seat-name" title="${esc(name)}">${esc(name)}</span>${tagsHtml}</span>
     <span class="seat-net num ${teamNet ? cls(teamNet) : 'zero'}">${teamNet ? money(teamNet) : '±0'}</span>
     <span class="seat-foot num">${mateInfo}<span>籌 ${(1000 + teamNet).toLocaleString('en-US')}</span></span>
   </button>`;
@@ -1719,7 +1719,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191926';
+const APP_VERSION = '202610191929';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
