@@ -254,7 +254,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191643"></script>
+<script src="logic.js?v=202610191648"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -592,8 +592,12 @@ function previewHtml(g, st, hand, names, curType) {
   return `<div class="preview">${lines}${sum}</div>`;
 }
 
+// 自摸且有開自摸加台時，畫面上的台數含自摸 1 台（存檔的 tai 仍是不含自摸的牌面台）
+const selfExtra = (g, type) => (type === 'tsumo' && g && g.settings.tsumoTai !== false ? 1 : 0);
+
 // 記一把和修改某一把共用同一個面板，scope 決定改的是哪一份狀態
 function handForm(scope, e, g, st, names) {
+  const self = selfExtra(g, e.type);
   const chips = (key, disabledIdx) => [0, 1, 2, 3].map((p) =>
     `<button type="button" class="chip" data-act="pick" data-scope="${scope}" data-key="${key}" data-p="${p}" aria-pressed="${e[key] === p}"${p === disabledIdx ? ' disabled' : ''}>${esc(names[p])}</button>`).join('');
   const typeBtn = (t, label) => `<button type="button" data-act="type" data-scope="${scope}" data-t="${t}" aria-pressed="${t === 'ron' ? e.type === 'ron' || e.type === 'triple' : e.type === t}">${label}</button>`;
@@ -612,10 +616,10 @@ function handForm(scope, e, g, st, names) {
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-p="${p}" data-d="1" aria-label="${esc(names[p])}加一台">+</button>
         <div class="quick">${[1, 2, 3, 4, 5, 8].map((n) => `<button type="button" data-act="taiset" data-scope="${scope}" data-p="${p}" data-n="${n}">${n}</button>`).join('')}</div>
       </div></div>`).join(''))
-    : `<div class="field"><span class="label">台數（${g.settings.tsumoTai !== false ? '不含自摸和連莊' : '不含連莊'}，App 會自動加）</span>
+    : `<div class="field"><span class="label">台數（${self ? '含自摸 1 台，不含連莊' : '不含連莊'}，App 會自動加）</span>
       <div class="stepper">
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-d="-1" aria-label="減一台">−</button>
-        <span class="tai num" aria-live="polite">${e.tai}</span>
+        <span class="tai num" aria-live="polite">${e.tai + self}</span>
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-d="1" aria-label="加一台">+</button>
         <div class="quick">${[1, 2, 3, 4, 5, 8].map((n) => `<button type="button" data-act="taiset" data-scope="${scope}" data-n="${n}">${n}</button>`).join('')}</div>
       </div></div>`;
@@ -687,10 +691,10 @@ function seatPanelHtml(g, r) {
       <button type="button" class="ghost" data-act="seatCancel">取消</button></div></section>`;
 }
 
-function handText(names, h) {
+function handText(names, h, g) {
   const n = (p) => esc(names[p]);
   if (h.type === 'draw') return '流局';
-  if (h.type === 'tsumo') return `${n(h.winner)} 自摸 ${h.tai} 台`;
+  if (h.type === 'tsumo') return `${n(h.winner)} 自摸 ${h.tai + selfExtra(g, 'tsumo')} 台`;
   if (h.type === 'triple') {
     const wins = [0, 1, 2, 3].filter((p) => p !== h.loser).map((p) => `${n(p)} ${(h.tais && h.tais[p]) || 0} 台`).join('、');
     return `${n(h.loser)} 放槍一炮三響（${wins}）`;
@@ -759,7 +763,7 @@ function viewLog() {
       `<span>${esc(row.names[p])} <b class="num ${cls(row.delta[p])}">${money(row.delta[p])}</b></span>`).join('');
     const editing = ui.edit && ui.edit.index === row.index;
     items.push(`<li class="hand${editing ? ' current' : ''}"><div class="hand-no num">${row.no}</div>
-      <div><div class="hand-what">${handText(row.names, row.hand)}</div>
+      <div><div class="hand-what">${handText(row.names, row.hand, g)}</div>
       <div class="hand-meta">${row.hand.t ? clock(row.hand.t) + ' · ' : ''}${MJ.roundLabel(row.before.rotation)} · 莊 ${esc(row.names[row.before.dealer])}${row.before.streak ? ' 連' + row.before.streak : ''}</div></div>
       <button type="button" class="ghost small" data-act="edit" data-i="${row.index}">修改</button>
       ${deltas ? `<div class="hand-deltas">${deltas}</div>` : ''}</li>`);
@@ -1169,7 +1173,7 @@ function buildCsv() {
       const h = row.hand;
       const nm = row.names;
       const winCol = h.type === 'draw' ? '' : h.type === 'triple' ? [0, 1, 2, 3].filter((p) => p !== h.loser).map((p) => nm[p]).join('／') : nm[h.winner];
-      const taiCol = h.type === 'draw' ? '' : h.type === 'triple' ? [0, 1, 2, 3].filter((p) => p !== h.loser).map((p) => (h.tais && h.tais[p]) || 0).join('／') : h.tai;
+      const taiCol = h.type === 'draw' ? '' : h.type === 'triple' ? [0, 1, 2, 3].filter((p) => p !== h.loser).map((p) => (h.tais && h.tais[p]) || 0).join('／') : h.tai + selfExtra(g, h.type);
       const line = [date, g.location || '', clock(startOf(g)), row.no, h.t ? clock(h.t) : '',
         MJ.roundLabel(row.before.rotation), nm[row.before.dealer], row.before.streak, kind[h.type],
         winCol, h.type === 'ron' || h.type === 'triple' ? nm[h.loser] : '', taiCol];
@@ -1301,11 +1305,13 @@ document.addEventListener('click', (ev) => {
       break;
     case 'type':
       e.type = btn.dataset.t;
+      e.tai = 0;
+      e.tais = [0, 0, 0, 0];
       if (e.type !== 'ron' && e.type !== 'triple') e.loser = null;
-      if (!e.tais) e.tais = [0, 0, 0, 0];
       break;
     case 'triple':
-      if (!e.tais) e.tais = [0, 0, 0, 0];
+      e.tai = 0;
+      e.tais = [0, 0, 0, 0];
       e.type = e.type === 'triple' ? 'ron' : 'triple';
       if (e.type === 'triple') e.winner = null;
       break;
@@ -1353,7 +1359,8 @@ document.addEventListener('click', (ev) => {
         if (!e.tais) e.tais = [0, 0, 0, 0];
         e.tais[p] = Number(btn.dataset.n);
       } else {
-        e.tai = Number(btn.dataset.n);
+        const g = btn.dataset.scope === 'edit' ? viewedGame() : activeGame();
+        e.tai = Math.max(0, Number(btn.dataset.n) - selfExtra(g, e.type));
       }
       break;
     case 'record': {
@@ -1545,7 +1552,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191643';
+const APP_VERSION = '202610191648';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
