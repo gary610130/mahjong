@@ -118,7 +118,7 @@ h3 { font-size: 0.95rem; margin: 0; }
 .links { display: flex; justify-content: flex-end; gap: 4px; }
 .link { border: 0; background: transparent; color: var(--muted); font-size: 0.85rem; padding: 4px 8px; text-decoration: underline; text-underline-offset: 3px; }
 .meta-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.92rem; }
-.meta-row .link { padding-right: 0; }
+.meta-row > .link, .meta-row .link:last-child { padding-right: 0; }
 .picked { font-size: 0.95rem; font-weight: 700; min-height: 1.5em; }
 .picked .hint { font-weight: 400; }
 
@@ -255,7 +255,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191651"></script>
+<script src="logic.js?v=202610191653"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -544,7 +544,7 @@ function pickedLine(e, names) {
   if (e.winner == null) return `<div class="picked hint">點上面的卡片選誰${e.type === 'tsumo' ? '自摸' : '胡牌'}</div>`;
   if (e.type === 'tsumo') return `<div class="picked">${esc(names[e.winner])} 自摸</div>`;
   if (e.loser == null) return `<div class="picked">${esc(names[e.winner])} 胡<span class="hint">，再點放槍的人</span></div>`;
-  return `<div class="picked">${esc(names[e.winner])} 胡 ${esc(names[e.loser])}</div>`;
+  return `<div class="picked">${esc(names[e.winner])} 胡 ${esc(names[e.loser])} <button type="button" class="link" data-act="swapPick" data-scope="entry">⇄ 對調</button></div>`;
 }
 
 function handFrom(e) {
@@ -606,10 +606,12 @@ function handForm(scope, e, g, st, names) {
   const typeBtn = (t, label) => `<button type="button" data-act="type" data-scope="${scope}" data-t="${t}" aria-pressed="${t === 'ron' ? e.type === 'ron' || e.type === 'triple' : e.type === t}">${label}</button>`;
   const tripleLink = e.type === 'ron' || e.type === 'triple'
     ? `<button type="button" class="link" data-act="triple" data-scope="${scope}">${e.type === 'triple' ? '改回單家胡' : '一炮三響'}</button>` : '';
+  const swapLink = e.type === 'ron' && e.winner != null && e.loser != null
+    ? `<button type="button" class="link" data-act="swapPick" data-scope="${scope}">⇄ 對調</button>` : '';
   // 記一把時直接點牌桌上的卡片選人，不另外列名字按鈕
   const pickers = scope === 'entry' ? `<div class="meta-row">${pickedLine(e, names)}${tripleLink}</div>` : `
     ${e.type === 'draw' || e.type === 'triple' ? '' : `<div class="field"><span class="label">誰胡牌</span><div class="chips">${chips('winner', -1)}</div></div>`}
-    ${e.type === 'ron' ? `<div class="field"><div class="meta-row"><span class="label">誰放槍</span>${tripleLink}</div><div class="chips">${chips('loser', e.winner)}</div></div>` : ''}
+    ${e.type === 'ron' ? `<div class="field"><div class="meta-row"><span class="label">誰放槍</span><span>${swapLink}${tripleLink}</span></div><div class="chips">${chips('loser', e.winner)}</div></div>` : ''}
     ${e.type === 'triple' ? `<div class="field"><div class="meta-row"><span class="label">誰放槍（一炮三響）</span>${tripleLink}</div><div class="chips">${chips('loser', -1)}</div></div>` : ''}`;
   const taiRows = e.type === 'draw' ? '' : e.type === 'triple'
     ? (e.loser == null ? '' : [0, 1, 2, 3].filter((p) => p !== e.loser).map((p) => {
@@ -1327,6 +1329,13 @@ document.addEventListener('click', (ev) => {
       if (e.loser === e.winner) e.loser = null;
       break;
     }
+    case 'swapPick':
+      if (e && e.winner != null && e.loser != null) {
+        const tmp = e.winner;
+        e.winner = e.loser;
+        e.loser = tmp;
+      }
+      break;
     case 'seatPick': pickSeat(Number(btn.dataset.p)); break;
     case 'editMeta': {
       const g = viewedGame();
@@ -1558,7 +1567,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191651';
+const APP_VERSION = '202610191653';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
