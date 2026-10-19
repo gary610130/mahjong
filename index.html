@@ -285,7 +285,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .state-round { font-size: 1.08rem; line-height: 1.15; }
   .state-no { font-size: 0.75rem; padding: 1px 8px; }
   .state-sub { font-size: 0.74rem; line-height: 1.2; }
-  .state-actions .link { min-height: 30px; padding: 2px 8px; font-size: 0.74rem; }
+  .state-actions .link { min-height: 44px; padding: 4px 10px; font-size: 0.78rem; }
   .seats { gap: 5px; }
   .seat { min-height: 70px; padding: 6px 9px; border-radius: 11px; gap: 1px; line-height: 1.15; }
   .seat.dealer { padding: 5.5px 8.5px; }
@@ -298,9 +298,9 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .play > .panel[aria-label="記一把"] > h2 { display: none; }
   .seg { padding: 3px; gap: 4px; border-radius: 10px; }
   .seg button { min-height: 44px; padding: 4px 6px; font-size: 0.92rem; }
-  .meta-row { min-height: 36px; gap: 6px; font-size: 0.86rem; }
+  .meta-row { min-height: 44px; gap: 6px; font-size: 0.86rem; }
   .picked { font-size: 0.88rem; }
-  .meta-row .link { min-height: 36px; padding: 2px 8px; font-size: 0.78rem; }
+  .meta-row .link { min-height: 44px; padding: 4px 10px; font-size: 0.8rem; }
   .field { gap: 3px; }
   .field > .label { font-size: 0.72rem; line-height: 1.15; }
   .stepper { gap: 4px; flex-wrap: nowrap; }
@@ -310,7 +310,25 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .quick button { min-width: 32px; min-height: 44px; font-size: 0.92rem; border-radius: 8px; }
   .preview { padding: 5px 9px; gap: 2px; font-size: 0.8rem; line-height: 1.25; border-radius: 8px; }
   .pay small { font-size: 0.7rem; line-height: 1.15; display: inline; margin-left: 4px; }
+  .pay-sum { border-top: 1px dashed var(--line-strong); padding-top: 3px; margin-top: 2px; font-weight: 700; }
   .primary { min-height: 44px; padding: 8px 12px; font-size: 0.96rem; border-radius: 10px; }
+}
+@media (max-width: 600px) and (max-height: 700px) {
+  .bar-in { padding-block: 3px; }
+  .wrap { padding-block: 3px calc(54px + env(safe-area-inset-bottom, 0px)); gap: 4px; }
+  .notice { display: none; }
+  .play { gap: 4px; }
+  .table-col { gap: 4px; }
+  .state { padding: 4px 8px; gap: 1px; }
+  .state-round { font-size: 1rem; }
+  .state-sub { font-size: 0.7rem; }
+  .seats { gap: 4px; }
+  .seat { min-height: 64px; padding: 4px 8px; gap: 0; }
+  .seat.dealer { padding: 3.5px 7.5px; }
+  .seat-net { font-size: 24px; line-height: 1.05; margin-top: 0; }
+  .panel { padding: 6px 8px; gap: 4px; }
+  .field > .label { display: none; }
+  .preview { padding: 4px 8px; font-size: 0.76rem; }
 }
 </style>
 </head>
@@ -331,7 +349,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191742"></script>
+<script src="logic.js?v=202610191745"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -662,8 +680,8 @@ function previewHtml(g, st, hand, names, curType) {
   const total = res.pays.reduce((a, x) => a + x.amt, 0);
   const sum = res.pays.length > 1
     ? hand.type === 'triple'
-      ? `<div class="pay"><div>${esc(names[hand.loser])} 共付</div><div class="num loss"><b>${total.toLocaleString('en-US')}</b></div></div>`
-      : `<div class="pay"><div>${esc(names[hand.winner])} 共收</div><div class="num gain"><b>${total.toLocaleString('en-US')}</b></div></div>`
+      ? `<div class="pay pay-sum"><div>${esc(names[hand.loser])} 共付</div><div class="num loss"><b>${total.toLocaleString('en-US')}</b></div></div>`
+      : `<div class="pay pay-sum"><div>${esc(names[hand.winner])} 共收</div><div class="num gain"><b>${total.toLocaleString('en-US')}</b></div></div>`
     : '';
   return `<div class="preview">${lines}${sum}</div>`;
 }
@@ -708,8 +726,8 @@ function handForm(scope, e, g, st, names) {
       </div></div>`;
   return `<div class="seg">${typeBtn('ron', '放槍')}${typeBtn('tsumo', '自摸')}${typeBtn('draw', '流局')}</div>
     ${pickers}
-    ${taiRows}
-    ${previewHtml(g, st, handFrom(e), names, e.type)}`;
+    ${previewHtml(g, st, handFrom(e), names, e.type)}
+    ${taiRows}`;
 }
 
 function viewTable() {
@@ -721,10 +739,12 @@ function viewTable() {
   const hand = handFrom(ui.entry);
   const seats = [0, 1, 2, 3].map((p) => seatHtml(r, p)).join('');
   const s = g.settings;
+  const totalAmt = hand && hand.type !== 'draw' ? MJ.settleHand(st, hand, s).pays.reduce((a, x) => a + x.amt, 0) : 0;
+  const recLabel = hand ? (hand.type === 'draw' ? '記錄流局' : `記錄這一把（$${totalAmt.toLocaleString('en-US')}）`) : '記錄這一把';
   const side = ui.seatPanel ? seatPanelHtml(g, r) : `<section class="panel" aria-label="記一把">
       <h2>記一把</h2>
       ${handForm('entry', ui.entry, g, st, names)}
-      <button type="button" class="primary" data-act="record"${hand ? '' : ' disabled'}>記錄這一把</button>
+      <button type="button" class="primary num" data-act="record"${hand ? '' : ' disabled'}>${recLabel}</button>
       ${ui.flash ? `<div class="flash" role="status">${esc(ui.flash)}${/^已記錄/.test(ui.flash) && g.hands.length ? ` <button type="button" class="link" data-act="edit" data-i="${g.hands.length - 1}" data-from="table">改這把</button>` : ''}</div>` : ''}
     </section>`;
   const done = MJ.totalRotation(g);
@@ -1653,7 +1673,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191742';
+const APP_VERSION = '202610191745';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
