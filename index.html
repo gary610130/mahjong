@@ -254,7 +254,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191603"></script>
+<script src="logic.js?v=202610191607"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -451,18 +451,36 @@ function withLineups(g) {
 
 // ---------- 畫面 ----------
 function render() {
+  const act = document.activeElement;
+  const focusId = act && /INPUT|SELECT|TEXTAREA/.test(act.tagName) && act.id ? act.id : null;
+  let selStart = null;
+  let selEnd = null;
+  if (focusId) {
+    try { selStart = act.selectionStart; selEnd = act.selectionEnd; } catch (e) { /* time/number 等不支援游標的欄位略過 */ }
+  }
   document.querySelectorAll('#tabs button').forEach((b) => {
     if (b.dataset.tab === ui.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
   updateSync();
   if (mode === 'loading') { $view.innerHTML = '<p class="empty">正在讀取牌局…</p>'; return; }
-  if (mode === 'noroom') { $view.innerHTML = viewLanding(); return; }
-  let html = notice ? `<div class="notice" role="status">${esc(notice)}</div>` : '';
-  if (mode === 'local' && !notice) html += '<div class="notice">這個畫面沒有連上雲端，資料只會存在這台裝置的瀏覽器裡。</div>';
-  if (ui.tab === 'table') html += viewTable();
-  else if (ui.tab === 'log') html += viewLog();
-  else html += viewHistory();
-  $view.innerHTML = html;
+  if (mode === 'noroom') $view.innerHTML = viewLanding();
+  else {
+    let html = notice ? `<div class="notice" role="status">${esc(notice)}</div>` : '';
+    if (mode === 'local' && !notice) html += '<div class="notice">這個畫面沒有連上雲端，資料只會存在這台裝置的瀏覽器裡。</div>';
+    if (ui.tab === 'table') html += viewTable();
+    else if (ui.tab === 'log') html += viewLog();
+    else html += viewHistory();
+    $view.innerHTML = html;
+  }
+  if (focusId) {
+    const next = document.getElementById(focusId);
+    if (next) {
+      next.focus();
+      if (selStart != null && selEnd != null) {
+        try { next.setSelectionRange(selStart, selEnd); } catch (e) { /* 略過不支援游標的欄位 */ }
+      }
+    }
+  }
 }
 
 function seatHtml(r, p) {
@@ -721,8 +739,8 @@ function viewLog() {
       <div class="game-head"><h2>${dateLabel(startOf(g))} 牌局</h2><span class="status${live ? ' live' : ''}">${live ? '進行中' : '已結束'}</span></div>
       <div class="hint num">${timeLabel(g)} · 打了 ${MJ.totalRotation(g) ? MJ.progressLabel(MJ.totalRotation(g)) : '0 局'}（${g.hands.length} 把）</div>
       ${ui.editMeta ? `<div class="loc-row">
-        <label class="field loc-place"><span class="label">地點</span><input class="input" id="locEdit" list="locList" value="${esc(g.location || '')}" placeholder="例如：阿明家" autocomplete="off"></label>
-        <label class="field loc-time"><span class="label">開打時間</span><input class="input num" id="startEdit" type="time" value="${clock(startOf(g))}"></label>
+        <label class="field loc-place"><span class="label">地點</span><input class="input" id="locEdit" data-meta="loc" list="locList" value="${esc(ui.editMeta.loc)}" placeholder="例如：阿明家" autocomplete="off"></label>
+        <label class="field loc-time"><span class="label">開打時間</span><input class="input num" id="startEdit" data-meta="start" type="time" value="${esc(ui.editMeta.start)}"></label>
         <button type="button" class="ghost" data-act="saveLoc">儲存</button></div>
       ${locList()}` : `<div class="meta-row"><span>${g.location ? esc(g.location) : '<span class="hint">還沒填地點</span>'} · <span class="num">${clock(startOf(g))}</span> 開打</span>
         <button type="button" class="link" data-act="editMeta">編輯</button></div>`}
@@ -1223,7 +1241,7 @@ document.addEventListener('click', (ev) => {
     case 'tab':
       ui.tab = btn.dataset.tab;
       ui.edit = null;
-      ui.editMeta = false;
+      ui.editMeta = null;
       if (ui.tab !== 'log') ui.viewId = null;
       break;
     case 'type':
@@ -1237,7 +1255,11 @@ document.addEventListener('click', (ev) => {
       break;
     }
     case 'seatPick': pickSeat(Number(btn.dataset.p)); break;
-    case 'editMeta': ui.editMeta = true; break;
+    case 'editMeta': {
+      const g = viewedGame();
+      if (g) ui.editMeta = { loc: g.location || '', start: clock(startOf(g)) };
+      break;
+    }
     case 'fillLast': {
       const last = games.slice().sort(byNewest)[0];
       if (!last || !ui.draft) break;
@@ -1332,8 +1354,8 @@ document.addEventListener('click', (ev) => {
       const g = viewedGame();
       if (!g) return;
       const ng = clone(g);
-      ng.location = document.getElementById('locEdit').value.trim();
-      const hm = document.getElementById('startEdit').value;
+      ng.location = (ui.editMeta ? ui.editMeta.loc : document.getElementById('locEdit').value).trim();
+      const hm = ui.editMeta ? ui.editMeta.start : document.getElementById('startEdit').value;
       if (/^\d\d:\d\d$/.test(hm)) {
         const d = new Date(g.createdAt);
         d.setHours(Number(hm.slice(0, 2)), Number(hm.slice(3)), 0, 0);
@@ -1346,13 +1368,14 @@ document.addEventListener('click', (ev) => {
       }
       saveGame(ng);
       ui.flash = '已儲存';
-      ui.editMeta = false;
+      ui.editMeta = null;
       break;
     }
     case 'open':
       ui.viewId = btn.dataset.id;
       ui.tab = 'log';
       ui.edit = null;
+      ui.editMeta = null;
       break;
   }
   render();
@@ -1361,6 +1384,10 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('input', (ev) => {
   const el = ev.target;
   if (!el.dataset) return;
+  if (el.dataset.meta && ui.editMeta) {
+    ui.editMeta[el.dataset.meta] = el.value;
+    return;
+  }
   if (el.dataset.rn) {
     ui.rename[el.dataset.rn] = el.value;
     // 改了輸入就要重新確認一次合併
@@ -1426,7 +1453,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191603';
+const APP_VERSION = '202610191607';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
