@@ -279,30 +279,33 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .history-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: start; }
   .hist-tools { grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); align-items: start; }
 }
-@media (max-width: 600px) {
+@media (max-width: 520px) {
   .bar-in, .wrap { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
   .bar-in { padding-block: 5px; gap: 6px; }
   .brand { font-size: 1.02rem; gap: 8px; width: 100%; justify-content: space-between; }
   .tabs { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; border-radius: 16px 16px 0 0; border-inline: 0; border-bottom: 0; border-top: 1.5px solid var(--line-strong); background: var(--surface-elev); padding: 4px 10px calc(4px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -4px 16px rgb(0 0 0 / 0.16); gap: 6px; }
   .tabs button { min-height: 44px; padding: 4px 8px; font-size: 0.92rem; border-radius: 10px; }
-  .wrap { padding-block: 6px calc(64px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
-  .notice { padding: 4px 10px; font-size: 0.76rem; line-height: 1.3; border-radius: 8px; }
-  .play { gap: 6px; }
-  .table-col { gap: 5px; }
-  .state { padding: 6px 10px; border-radius: 12px; gap: 2px; }
-  .state-round { font-size: 1.08rem; line-height: 1.15; }
-  .state-no { font-size: 0.75rem; padding: 1px 8px; }
-  .state-sub { font-size: 0.74rem; line-height: 1.2; }
+  body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+  .wrap { width: 100%; flex: 1; padding-block: 6px calc(68px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 6px; }
+  .wrap:has(> .play) { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)); }
+  .notice { padding: 4px 10px; font-size: 0.76rem; line-height: 1.3; border-radius: 8px; flex: none; }
+  .play { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+  .table-col { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+  .state { padding: 8px 12px; border-radius: 12px; gap: 3px; flex: none; }
+  .state-round { font-size: 1.18rem; line-height: 1.15; }
+  .state-no { font-size: 0.76rem; padding: 1px 8px; }
+  .state-sub { font-size: 0.76rem; line-height: 1.2; }
   .state-actions .link { min-height: 44px; padding: 4px 10px; font-size: 0.78rem; }
-  .seats { gap: 5px; }
-  .seat { min-height: 70px; padding: 6px 9px; border-radius: 11px; gap: 1px; line-height: 1.15; }
-  .seat.dealer { padding: 5.5px 8.5px; }
-  .wind { width: 20px; height: 20px; font-size: 0.82rem; border-radius: 5px; }
-  .seat-name { font-size: 0.92rem; }
-  .badge, .tag { font-size: 0.7rem; padding: 1px 5px; }
-  .seat-net { font-size: 24px; line-height: 1.1; margin-top: 1px; }
-  .seat-foot { font-size: 0.7rem; line-height: 1.15; }
-  .panel { padding: 8px 10px; border-radius: 14px; gap: 6px; }
+  .seats { flex: 1; gap: 6px; grid-auto-rows: 1fr; }
+  .seat { min-height: 76px; height: 100%; padding: 8px 10px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 2px; line-height: 1.15; }
+  .seat.dealer { padding: 7.5px 9.5px; }
+  .wind { width: 21px; height: 21px; font-size: 0.84rem; border-radius: 5px; }
+  .seat-name { font-size: 0.96rem; }
+  .badge, .tag { font-size: 0.72rem; padding: 1px 6px; }
+  .seat-net { font-size: clamp(24px, 3.5vh, 30px); line-height: 1.1; margin-block: auto; }
+  .seat-foot { font-size: 0.72rem; line-height: 1.15; width: 100%; }
+  .panel { padding: 7px 10px 6px; border-radius: 14px; gap: 6px; }
+  .play > .panel { flex: none; }
   .play > .panel[aria-label="記一把"] > h2 { display: none; }
   .seg { padding: 3px; gap: 4px; border-radius: 10px; }
   .seg button { min-height: 44px; padding: 4px 6px; font-size: 0.92rem; }
@@ -321,19 +324,19 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .pay-sum { border-top: 1px dashed var(--line-strong); padding-top: 3px; margin-top: 2px; font-weight: 700; }
   .primary { min-height: 44px; padding: 8px 12px; font-size: 0.96rem; border-radius: 10px; }
 }
-@media (max-width: 600px) and (max-height: 700px) {
+@media (max-width: 520px) and (max-height: 700px) {
   .bar-in { padding-block: 3px; }
-  .wrap { padding-block: 3px calc(54px + env(safe-area-inset-bottom, 0px)); gap: 4px; }
+  .wrap { padding-top: 4px; gap: 4px; }
   .notice { display: none; }
   .play { gap: 4px; }
   .table-col { gap: 4px; }
-  .state { padding: 4px 8px; gap: 1px; }
-  .state-round { font-size: 1rem; }
-  .state-sub { font-size: 0.7rem; }
+  .state { padding: 5px 9px; gap: 1px; }
+  .state-round { font-size: 1.04rem; }
+  .state-sub { font-size: 0.72rem; }
   .seats { gap: 4px; }
-  .seat { min-height: 64px; padding: 4px 8px; gap: 0; }
-  .seat.dealer { padding: 3.5px 7.5px; }
-  .seat-net { font-size: 24px; line-height: 1.05; margin-top: 0; }
+  .seat { min-height: 68px; padding: 5px 8px; }
+  .seat.dealer { padding: 4.5px 7.5px; }
+  .seat-net { font-size: 24px; line-height: 1.05; }
   .panel { padding: 6px 8px; gap: 4px; }
   .field > .label { display: none; }
   .preview { padding: 4px 8px; font-size: 0.76rem; }
@@ -357,7 +360,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191750"></script>
+<script src="logic.js?v=202610191855"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -1686,7 +1689,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191750';
+const APP_VERSION = '202610191855';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
