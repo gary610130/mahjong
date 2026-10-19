@@ -262,7 +262,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 @media (min-width: 640px) { .settle-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .settle-card { background: var(--surface-sub); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .settle-card b { font-size: 1.15rem; font-weight: 800; }
-.log-grid { display: grid; gap: 18px; }
+.log-grid, .history-grid, .hist-tools { display: grid; gap: 18px; }
 .seat-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 0.74rem; color: var(--muted); overflow: hidden; white-space: nowrap; }
 .seat-foot > span { overflow: hidden; text-overflow: ellipsis; }
 .seat.pick-win .seat-foot { color: var(--pick-ink); }
@@ -276,6 +276,8 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .table-rules { display: flex; flex-wrap: wrap; gap: 8px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; font-size: 0.82rem; color: var(--muted); box-shadow: var(--shadow); }
   .table-rules b { color: var(--ink); }
   .log-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+  .history-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: start; }
+  .hist-tools { grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); align-items: start; }
 }
 @media (max-width: 600px) {
   .bar-in, .wrap { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
@@ -355,7 +357,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191747"></script>
+<script src="logic.js?v=202610191748"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -944,7 +946,7 @@ const CH = { l: 52, t: 12, b: 28 };
 function chartWidth() {
   const v = document.getElementById('view');
   const cw = Math.min(v.clientWidth, 1200);
-  if (window.innerWidth >= 900 && ui.tab === 'log') return Math.max(260, Math.round(cw * 0.46) - 54);
+  if (window.innerWidth >= 900 && (ui.tab === 'log' || ui.tab === 'history')) return Math.max(260, Math.round(cw * 0.45) - 54);
   return Math.max(260, cw - 32 - 34);
 }
 // 估文字寬度：中文字比英數寬
@@ -1175,9 +1177,11 @@ function viewHistory() {
 
   const scope = ui.filter.loc || ui.filter.month ? '（篩選後）' : '';
   return `${filters ? `<section class="panel">${filters}<div class="hint">${fg.length} 場符合</div></section>` : ''}
-    <section class="panel"><h2>累計輸贏${scope}</h2>
-      ${board ? `<p class="hint">小線是每場打完時的累計，大家用同一個刻度。點一個人看大圖。</p><div class="board">${board}</div>` : '<p class="hint">打完第一場就會出現排行。名字打一樣的會算成同一個人。</p>'}</section>
-    ${heat ? `<section class="panel"><h2>每場輸贏${scope}</h2><p class="hint">最新的一場在最左邊，可以左右滑。綠色是贏、紅色是輸，顏色越深金額越大；「—」是那場沒上桌。</p>${heat}</section>` : ''}
+    <div class="history-grid">
+      <section class="panel"><h2>累計輸贏${scope}</h2>
+        ${board ? `<p class="hint">小線是每場打完時的累計，大家用同一個刻度。點一個人看大圖。</p><div class="board">${board}</div>` : '<p class="hint">打完第一場就會出現排行。名字打一樣的會算成同一個人。</p>'}</section>
+      ${heat ? `<section class="panel"><h2>每場輸贏${scope}</h2><p class="hint">最新的一場在最左邊，可以左右滑。綠色是贏、紅色是輸，顏色越深金額越大；「—」是那場沒上桌。</p>${heat}</section>` : ''}
+    </div>
     ${statRows ? `<section class="panel"><h2>個人數據${scope}</h2>
       <div class="scroll"><table class="grid"><thead><tr><th>玩家</th><th>場</th><th>把數</th><th>胡牌率</th><th>自摸率</th><th>放槍率</th><th>平均台</th><th>單把最多贏</th><th>單把最多輸</th><th>最高連莊</th></tr></thead>
       <tbody>${statRows}</tbody></table></div>
@@ -1186,8 +1190,7 @@ function viewHistory() {
         ${games.length ? '<button type="button" class="ghost" data-act="export">匯出 CSV</button>' : ''}</div>
       ${ui.flash && ui.tab === 'history' ? `<div class="flash" role="status">${esc(ui.flash)}</div>` : ''}
       ${cards ? `<div class="games">${cards}</div>` : '<p class="hint">沒有符合的牌局。</p>'}</section>
-    ${games.length ? renamePanel() : ''}
-    ${sharePanel()}`;
+    <div class="hist-tools">${games.length ? renamePanel() : ''}${sharePanel()}</div>`;
 }
 
 // 改名或合併：所有牌局裡的這個名字一起換掉；新名字已經有人用，就等於把兩份戰績合併
@@ -1683,7 +1686,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191747';
+const APP_VERSION = '202610191748';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
