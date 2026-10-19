@@ -254,7 +254,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191611"></script>
+<script src="logic.js?v=202610191613"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -313,6 +313,23 @@ const peopleList = () => `<datalist id="peopleList">${allNames().map((n) => `<op
 function colorOf(name) {
   const i = allNames().indexOf(name);
   return i >= 0 && i < 8 ? `var(--s${i + 1})` : 'var(--s-other)';
+}
+
+// 單場有人是灰色時，挪用這場沒出現的人的顏色槽給他們
+function gameColorOf(r) {
+  const all = allNames();
+  const used = new Set();
+  r.order.forEach((n) => {
+    const i = all.indexOf(n);
+    if (i >= 0 && i < 8) used.add(i);
+  });
+  const free = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => !used.has(i));
+  const map = {};
+  r.order.forEach((n) => {
+    const i = all.indexOf(n);
+    map[n] = i >= 0 && i < 8 ? `var(--s${i + 1})` : free.length ? `var(--s${free.shift() + 1})` : 'var(--s-other)';
+  });
+  return (name) => map[name] || colorOf(name);
 }
 
 // ---------- 資料存取：Firebase 上的一個「房間」，網址 # 後面就是房間碼 ----------
@@ -688,10 +705,11 @@ function viewLog() {
   const s = g.settings;
   // 次數後面附上比例（以他有上桌的把數為分母）
   const rate = (a, b) => `${a}<span class="rate">${b ? Math.round((a / b) * 100) + '%' : '—'}</span>`;
+  const gColor = gameColorOf(r);
   // 有寫進隊伍但一把都沒上桌的人不列出來，跟走勢圖一致
   const statRows = r.order.filter((n) => r.people[n].hands).map((n) => {
     const o = r.people[n];
-    return `<tr><td><span class="dot" style="background:${colorOf(n)}"></span>${esc(n)}</td>
+    return `<tr><td><span class="dot" style="background:${gColor(n)}"></span>${esc(n)}</td>
     <td class="num ${cls(o.net)}"><b>${money(o.net)}</b></td><td class="num">${o.hands}</td>
     <td class="num">${rate(o.win, o.hands)}</td><td class="num">${rate(o.tsumo, o.hands)}</td><td class="num">${rate(o.deal, o.hands)}</td>
     <td class="num">${o.win ? (o.taiSum / o.win).toFixed(1) : '—'}</td>
@@ -734,7 +752,7 @@ function viewLog() {
   const actions = live
     ? `<div class="row-actions">${armBtn('end', '結束這場')}</div>`
     : `<div class="row-actions"><button type="button" class="ghost" data-act="tab" data-tab="history">回戰績</button></div>`;
-  const chart = gameChart(g, r);
+  const chart = gameChart(g, r, gColor);
   return `<section class="panel">
       <div class="game-head"><h2>${dateLabel(startOf(g))} 牌局</h2><span class="status${live ? ' live' : ''}">${live ? '進行中' : '已結束'}</span></div>
       <div class="hint num">${timeLabel(g)} · 打了 ${MJ.totalRotation(g) ? MJ.progressLabel(MJ.totalRotation(g)) : '0 局'}（${g.hands.length} 把）</div>
@@ -873,8 +891,9 @@ window.addEventListener('resize', () => {
 }));
 
 // 單場走勢：可以看每個位子（隊伍）或每個人
-function gameChart(g, r) {
+function gameChart(g, r, gColor) {
   if (g.hands.length < 1) return '';
+  const color = gColor || gameColorOf(r);
   const byTeam = ui.chartBy !== 'person';
   const lineups = MJ.lineupsOf(g);
   const keys = byTeam ? teamsOf(r).map((t) => t.id) : r.order.filter((n) => r.people[n].hands);
@@ -889,7 +908,7 @@ function gameChart(g, r) {
     keys.forEach((k) => { run[k].push(run[k][run[k].length - 1] + (step[k] || 0)); });
   });
   const labels = [{ short: '開始', long: '開始' }].concat(r.rows.map((row) => ({ short: String(row.no), long: `第 ${row.no} 把` })));
-  const series = keys.map((k) => ({ name: byTeam ? teamLabel(r.teams[k]) : k, color: colorOf(k), values: run[k] }));
+  const series = keys.map((k) => ({ name: byTeam ? teamLabel(r.teams[k]) : k, color: color(k), values: run[k] }));
   const btn = (v, label) => `<button type="button" data-act="chartBy" data-v="${v}" aria-pressed="${(ui.chartBy || 'team') === v}">${label}</button>`;
   return `<div class="seg seg-2">${btn('team', '看位子（隊伍）')}${btn('person', '看個人')}</div>${lineChart(series, labels)}`;
 }
@@ -1462,7 +1481,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191611';
+const APP_VERSION = '202610191613';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
