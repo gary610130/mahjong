@@ -258,6 +258,11 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .landing { display: grid; gap: 14px; max-width: 32rem; margin: 6vh auto 0; text-align: center; }
 .landing .primary { justify-self: center; padding-inline: 28px; }
 .table-rules { display: none; }
+.settle-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 640px) { .settle-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.settle-card { background: var(--surface-sub); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.settle-card b { font-size: 1.15rem; font-weight: 800; }
+.log-grid { display: grid; gap: 18px; }
 .seat-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 0.74rem; color: var(--muted); overflow: hidden; white-space: nowrap; }
 .seat-foot > span { overflow: hidden; text-overflow: ellipsis; }
 .seat.pick-win .seat-foot { color: var(--pick-ink); }
@@ -270,6 +275,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .seat-net { font-size: 1.95rem; margin-block: 4px 2px; }
   .table-rules { display: flex; flex-wrap: wrap; gap: 8px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; font-size: 0.82rem; color: var(--muted); box-shadow: var(--shadow); }
   .table-rules b { color: var(--ink); }
+  .log-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
 }
 @media (max-width: 600px) {
   .bar-in, .wrap { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
@@ -349,7 +355,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191745"></script>
+<script src="logic.js?v=202610191747"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -842,10 +848,10 @@ const teamsOf = (r) => Object.values(r.teams).filter((t) => t.net || r.lineup.se
 
 function settlementHtml(r) {
   const teams = teamsOf(r).sort((a, b) => b.net - a.net);
-  const rows = teams.map((t) => `<tr><td>${esc(teamLabel(t))}</td>
-    <td class="num ${t.net ? cls(t.net) : 'zero'}"><b>${t.net ? money(t.net) : '±0'}</b></td></tr>`).join('');
+  const cards = teams.map((t) => `<div class="settle-card"><span>${esc(teamLabel(t))}</span>
+    <b class="num ${t.net ? cls(t.net) : 'zero'}">${t.net ? money(t.net) : '±0'}</b></div>`).join('');
   return `<h3>結算（每個位子）</h3>
-    <div class="scroll"><table class="grid"><thead><tr><th>位子／隊伍</th><th>輸贏</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    <div class="settle-cards">${cards}</div>`;
 }
 
 function viewLog() {
@@ -903,24 +909,26 @@ function viewLog() {
     ? `<div class="row-actions">${armBtn('end', '結束這場')}</div>`
     : `<div class="row-actions"><button type="button" class="ghost" data-act="tab" data-tab="history">回戰績</button></div>`;
   const chart = gameChart(g, r, gColor);
-  return `<section class="panel">
-      <div class="game-head"><h2>${dateLabel(startOf(g))} 牌局</h2><span class="status${live ? ' live' : ''}">${live ? '進行中' : '已結束'}</span></div>
-      <div class="hint num">${timeLabel(g)} · 打了 ${MJ.totalRotation(g) ? MJ.progressLabel(MJ.totalRotation(g)) : '0 局'}（${g.hands.length} 把）</div>
-      ${ui.editMeta ? `<div class="loc-row">
-        <label class="field loc-place"><span class="label">地點</span><input class="input" id="locEdit" data-meta="loc" list="locList" value="${esc(ui.editMeta.loc)}" placeholder="例如：阿明家" autocomplete="off"></label>
-        <label class="field loc-time"><span class="label">開打時間</span><input class="input num" id="startEdit" data-meta="start" type="time" value="${esc(ui.editMeta.start)}"></label>
-        <button type="button" class="ghost" data-act="saveLoc">儲存</button></div>
-      ${locList()}` : `<div class="meta-row"><span>${g.location ? esc(g.location) : '<span class="hint">還沒填地點</span>'} · <span class="num">${clock(startOf(g))}</span> 開打</span>
-        <button type="button" class="link" data-act="editMeta">編輯</button></div>`}
-      ${ui.flash && ui.tab === 'log' ? `<div class="flash" role="status">${esc(ui.flash)}</div>` : ''}
-      <div class="hint">底 ${s.base}／每台 ${s.perTai} · 自摸加台${s.tsumoTai !== false ? '開' : '關'} · 莊家台${s.dealerTai ? '開' : '關'} · 流局${s.drawStreak ? '加連莊' : '不加連莊'}</div>
-      ${settle}
-      <h3>個人紀錄</h3>
-      <div class="scroll"><table class="grid"><thead><tr><th>玩家</th><th>輸贏</th><th>把數</th><th>胡</th><th>自摸</th><th>放槍</th><th>平均台</th><th>單把最多贏</th><th>單把最多輸</th><th>最高連莊</th></tr></thead><tbody>${statRows}</tbody></table></div>
-      <p class="hint">胡、自摸、放槍下面的小字是比例，分母是他有上桌的把數。表格可以左右滑。</p>
-      ${actions}
-    </section>
-    ${chart ? `<section class="panel"><h2>這一場的走勢</h2>${chart}</section>` : ''}
+  return `<div class="log-grid">
+      <section class="panel">
+        <div class="game-head"><h2>${dateLabel(startOf(g))} 牌局</h2><span class="status${live ? ' live' : ''}">${live ? '進行中' : '已結束'}</span></div>
+        <div class="hint num">${timeLabel(g)} · 打了 ${MJ.totalRotation(g) ? MJ.progressLabel(MJ.totalRotation(g)) : '0 局'}（${g.hands.length} 把）</div>
+        ${ui.editMeta ? `<div class="loc-row">
+          <label class="field loc-place"><span class="label">地點</span><input class="input" id="locEdit" data-meta="loc" list="locList" value="${esc(ui.editMeta.loc)}" placeholder="例如：阿明家" autocomplete="off"></label>
+          <label class="field loc-time"><span class="label">開打時間</span><input class="input num" id="startEdit" data-meta="start" type="time" value="${esc(ui.editMeta.start)}"></label>
+          <button type="button" class="ghost" data-act="saveLoc">儲存</button></div>
+        ${locList()}` : `<div class="meta-row"><span>${g.location ? esc(g.location) : '<span class="hint">還沒填地點</span>'} · <span class="num">${clock(startOf(g))}</span> 開打</span>
+          <button type="button" class="link" data-act="editMeta">編輯</button></div>`}
+        ${ui.flash && ui.tab === 'log' ? `<div class="flash" role="status">${esc(ui.flash)}</div>` : ''}
+        <div class="hint">底 ${s.base}／每台 ${s.perTai} · 自摸加台${s.tsumoTai !== false ? '開' : '關'} · 莊家台${s.dealerTai ? '開' : '關'} · 流局${s.drawStreak ? '加連莊' : '不加連莊'}</div>
+        ${settle}
+        <h3>個人紀錄</h3>
+        <div class="scroll"><table class="grid"><thead><tr><th>玩家</th><th>輸贏</th><th>把數</th><th>胡</th><th>自摸</th><th>放槍</th><th>平均台</th><th>單把最多贏</th><th>單把最多輸</th><th>最高連莊</th></tr></thead><tbody>${statRows}</tbody></table></div>
+        <p class="hint">胡、自摸、放槍下面的小字是比例，分母是他有上桌的把數。表格可以左右滑。</p>
+        ${actions}
+      </section>
+      ${chart ? `<section class="panel"><h2>這一場的走勢</h2>${chart}</section>` : ''}
+    </div>
     ${editPanel}
     <section class="panel"><h2>每一把</h2>
       ${list ? `<ol class="hands">${list}</ol>` : '<p class="hint">還沒有記錄。</p>'}
@@ -935,7 +943,9 @@ const CH = { l: 52, t: 12, b: 28 };
 // 圖照面板的實際寬度畫，字才會是正常大小，不會整張被縮小
 function chartWidth() {
   const v = document.getElementById('view');
-  return Math.max(260, Math.min(v.clientWidth, 1080) - 32 - 34);
+  const cw = Math.min(v.clientWidth, 1200);
+  if (window.innerWidth >= 900 && ui.tab === 'log') return Math.max(260, Math.round(cw * 0.46) - 54);
+  return Math.max(260, cw - 32 - 34);
 }
 // 估文字寬度：中文字比英數寬
 const textWidth = (s) => [...s].reduce((a, ch) => a + (/[\x00-\xff]/.test(ch) ? 7.2 : 12.5), 0);
@@ -1673,7 +1683,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191745';
+const APP_VERSION = '202610191747';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
