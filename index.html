@@ -254,7 +254,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191648"></script>
+<script src="logic.js?v=202610191649"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -1372,7 +1372,7 @@ document.addEventListener('click', (ev) => {
       ng.hands.push(hand);
       saveGame(ng);
       ui.flash = `已記錄第 ${ng.hands.length} 把`;
-      ui.entry = newEntry(ui.entry.type === 'triple' ? 'ron' : ui.entry.type);
+      ui.entry = newEntry('ron');
       break;
     }
     case 'edit': {
@@ -1552,7 +1552,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191648';
+const APP_VERSION = '202610191649';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
