@@ -257,39 +257,60 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .share .input { flex: 1; min-width: 0; font-size: 0.85rem; }
 .landing { display: grid; gap: 14px; max-width: 32rem; margin: 6vh auto 0; text-align: center; }
 .landing .primary { justify-self: center; padding-inline: 28px; }
-@media (max-width: 520px) {
-  .bar-in, .wrap { padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
-  .bar-in { padding-block: 4px; gap: 6px; }
-  .brand { font-size: 1.05rem; gap: 6px; }
-  .tabs { flex: 1 1 10.5rem; min-width: 0; padding: 2px; }
-  .tabs button { min-height: 40px; padding: 4px 8px; font-size: 0.9rem; }
-  .wrap { padding-block: 6px 10px; gap: 8px; }
+.table-rules { display: none; }
+.seat-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 0.74rem; color: var(--muted); overflow: hidden; white-space: nowrap; }
+.seat-foot > span { overflow: hidden; text-overflow: ellipsis; }
+.seat.pick-win .seat-foot { color: var(--pick-ink); }
+.state-actions { display: flex; gap: 6px; align-items: center; }
+.state-actions .link { min-height: 36px; padding: 3px 10px; font-size: 0.78rem; background: rgb(0 0 0 / 0.24); color: var(--felt-ink); border-color: rgb(255 255 255 / 0.28); border-radius: 999px; }
+@media (min-width: 900px) {
+  .table-col { position: sticky; top: 76px; gap: 14px; }
+  .seat { min-height: 112px; padding: 14px 16px; border-radius: 16px; gap: 4px; }
+  .seat.dealer { padding: 13.5px 15.5px; }
+  .seat-net { font-size: 1.95rem; margin-block: 4px 2px; }
+  .table-rules { display: flex; flex-wrap: wrap; gap: 8px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; font-size: 0.82rem; color: var(--muted); box-shadow: var(--shadow); }
+  .table-rules b { color: var(--ink); }
+}
+@media (max-width: 600px) {
+  .bar-in, .wrap { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
+  .bar-in { padding-block: 5px; gap: 6px; }
+  .brand { font-size: 1.02rem; gap: 8px; width: 100%; justify-content: space-between; }
+  .tabs { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; border-radius: 16px 16px 0 0; border-inline: 0; border-bottom: 0; border-top: 1.5px solid var(--line-strong); background: var(--surface-elev); padding: 4px 10px calc(4px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -4px 16px rgb(0 0 0 / 0.16); gap: 6px; }
+  .tabs button { min-height: 44px; padding: 4px 8px; font-size: 0.92rem; border-radius: 10px; }
+  .wrap { padding-block: 6px calc(64px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
+  .notice { padding: 4px 10px; font-size: 0.76rem; line-height: 1.3; border-radius: 8px; }
   .play { gap: 6px; }
-  .table-col { gap: 4px; }
-  .state { padding: 5px 10px; border-radius: 11px; gap: 0; }
-  .state-round { font-size: 1.1rem; line-height: 1.2; }
-  .state-no, .state-sub { font-size: 0.76rem; line-height: 1.25; }
+  .table-col { gap: 5px; }
+  .state { padding: 6px 10px; border-radius: 12px; gap: 2px; }
+  .state-round { font-size: 1.08rem; line-height: 1.15; }
+  .state-no { font-size: 0.75rem; padding: 1px 8px; }
+  .state-sub { font-size: 0.74rem; line-height: 1.2; }
+  .state-actions .link { min-height: 30px; padding: 2px 8px; font-size: 0.74rem; }
   .seats { gap: 5px; }
-  .seat { padding: 5px 9px; border-radius: 10px; gap: 0; line-height: 1.25; }
-  .seat.dealer { padding: 4px 8px; }
-  .wind, .seat-name { font-size: 0.92rem; }
-  .seat-net { font-size: 1.25rem; line-height: 1.1; margin-top: 1px; }
-  .seat-mate, .seat-chips { font-size: 0.7rem; line-height: 1.2; }
-  .link { min-height: 40px; display: inline-flex; align-items: center; padding: 0 6px; }
+  .seat { min-height: 70px; padding: 6px 9px; border-radius: 11px; gap: 1px; line-height: 1.15; }
+  .seat.dealer { padding: 5.5px 8.5px; }
+  .wind { width: 20px; height: 20px; font-size: 0.82rem; border-radius: 5px; }
+  .seat-name { font-size: 0.92rem; }
+  .badge, .tag { font-size: 0.7rem; padding: 1px 5px; }
+  .seat-net { font-size: 24px; line-height: 1.1; margin-top: 1px; }
+  .seat-foot { font-size: 0.7rem; line-height: 1.15; }
   .panel { padding: 8px 10px; border-radius: 14px; gap: 6px; }
   .play > .panel[aria-label="記一把"] > h2 { display: none; }
-  .seg { padding: 2px; }
-  .seg button { min-height: 40px; padding: 4px; }
-  .meta-row { min-height: 40px; }
+  .seg { padding: 3px; gap: 4px; border-radius: 10px; }
+  .seg button { min-height: 44px; padding: 4px 6px; font-size: 0.92rem; }
+  .meta-row { min-height: 36px; gap: 6px; font-size: 0.86rem; }
+  .picked { font-size: 0.88rem; }
+  .meta-row .link { min-height: 36px; padding: 2px 8px; font-size: 0.78rem; }
   .field { gap: 3px; }
-  .stepper { gap: 5px; }
-  .stepper .round { width: 40px; height: 40px; font-size: 1.2rem; }
-  .tai { font-size: 1.5rem; line-height: 1; min-width: 2ch; }
-  .quick { gap: 4px; }
-  .quick button { min-width: 36px; height: 40px; }
-  .preview { padding: 6px 10px; gap: 3px; font-size: 0.85rem; line-height: 1.3; }
-  .pay small { font-size: 0.72rem; line-height: 1.2; }
-  .primary { min-height: 42px; padding: 8px 12px; font-size: 0.95rem; }
+  .field > .label { font-size: 0.72rem; line-height: 1.15; }
+  .stepper { gap: 4px; flex-wrap: nowrap; }
+  .stepper .round { width: 44px; height: 44px; font-size: 1.25rem; }
+  .tai { font-size: 1.4rem; line-height: 1; min-width: 1.8ch; }
+  .quick { gap: 3px; flex: 1 1 auto; }
+  .quick button { min-width: 32px; min-height: 44px; font-size: 0.92rem; border-radius: 8px; }
+  .preview { padding: 5px 9px; gap: 2px; font-size: 0.8rem; line-height: 1.25; border-radius: 8px; }
+  .pay small { font-size: 0.7rem; line-height: 1.15; display: inline; margin-left: 4px; }
+  .primary { min-height: 44px; padding: 8px 12px; font-size: 0.96rem; border-radius: 10px; }
 }
 </style>
 </head>
@@ -297,7 +318,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 
 <header class="bar">
   <div class="bar-in">
-    <div class="brand">麻將帳本 <span class="sync" id="sync">讀取中</span></div>
+    <div class="brand"><span>麻將帳本</span> <span class="sync" id="sync">讀取中</span></div>
     <nav class="tabs" id="tabs" aria-label="分頁">
       <button type="button" data-tab="table">牌局</button>
       <button type="button" data-tab="log">紀錄</button>
@@ -310,7 +331,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191739"></script>
+<script src="logic.js?v=202610191742"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -539,7 +560,7 @@ function render() {
   if (mode === 'noroom') $view.innerHTML = viewLanding();
   else {
     let html = notice ? `<div class="notice" role="status">${esc(notice)}</div>` : '';
-    if (mode === 'local' && !notice) html += '<div class="notice">這個畫面沒有連上雲端，資料只會存在這台裝置的瀏覽器裡。</div>';
+    if (mode === 'local' && !notice) html += '<div class="notice">本機離線模式：資料儲存在這台裝置的瀏覽器裡。</div>';
     if (ui.tab === 'table') html += viewTable();
     else if (ui.tab === 'log') html += viewLog();
     else html += viewHistory();
@@ -569,13 +590,12 @@ function seatHtml(r, p) {
   const lose = (e.type === 'ron' || e.type === 'triple') && e.loser === p;
   const tag = win ? `<span class="tag">${e.type === 'tsumo' ? '自摸' : '胡'}</span>` : lose ? '<span class="tag lose">放槍</span>' : '';
   const badge = isDealer && !tag ? `<span class="badge">莊${st.streak ? ' 連' + st.streak : ''}</span>` : '';
+  const mateInfo = mates.length ? `<span>隊友 ${mates.map((n) => `${esc(n)}(${money(r.people[n].net) || '0'})`).join('·')}</span>` : '<span></span>';
   return `<button type="button" class="seat${isDealer ? ' dealer' : ''}${win ? ' pick-win' : ''}${lose ? ' pick-lose' : ''}" style="grid-area:s${p}"
       data-act="seatPick" data-p="${p}"${e.type === 'draw' || ui.seatPanel ? ' disabled' : ''} aria-pressed="${win || lose}">
     <span class="seat-top"><span class="wind">${W[p]}</span><span class="seat-name">${esc(name)}</span>${tag || badge}</span>
-    ${mates.length ? `<span class="seat-mate">隊友 ${mates.map(esc).join('、')}</span>` : ''}
     <span class="seat-net num ${teamNet ? cls(teamNet) : 'zero'}">${teamNet ? money(teamNet) : '±0'}</span>
-    ${mates.length ? `<span class="seat-chips num">${seat.members.map((n) => `${esc(n)} ${money(r.people[n].net) || '0'}`).join(' · ')}</span>` : ''}
-    <span class="seat-chips num">籌碼 ${(1000 + teamNet).toLocaleString('en-US')}</span>
+    <span class="seat-foot num">${mateInfo}<span>籌 ${(1000 + teamNet).toLocaleString('en-US')}</span></span>
   </button>`;
 }
 
@@ -700,6 +720,7 @@ function viewTable() {
   const names = MJ.sittingOf(r.lineup);
   const hand = handFrom(ui.entry);
   const seats = [0, 1, 2, 3].map((p) => seatHtml(r, p)).join('');
+  const s = g.settings;
   const side = ui.seatPanel ? seatPanelHtml(g, r) : `<section class="panel" aria-label="記一把">
       <h2>記一把</h2>
       ${handForm('entry', ui.entry, g, st, names)}
@@ -710,13 +731,23 @@ function viewTable() {
   return `<div class="play">
     <div class="table-col">
       <section class="state" aria-label="目前局面">
-        <div class="state-top"><span class="state-round">${MJ.roundLabel(st.rotation).replace('風', '風 ')}</span><span class="state-no num">第 ${g.hands.length + 1} 把</span></div>
-        <div class="state-sub num">莊 ${esc(names[st.dealer])}${st.streak ? ' 連' + st.streak : ''} · 已打 ${done ? MJ.progressLabel(done) : '0 局'} · ${timeLabel(g)}</div>
+        <div class="state-top">
+          <span class="state-round">${MJ.roundLabel(st.rotation).replace('風', '風 ')}</span>
+          <span class="state-actions">
+            <span class="state-no num">第 ${g.hands.length + 1} 把</span>
+            <button type="button" class="link" data-act="seatOpen" data-mode="swap">換手</button>
+            <button type="button" class="link" data-act="seatOpen" data-mode="redraw">重抽位</button>
+          </span>
+        </div>
+        <div class="state-sub num"><span>莊 ${esc(names[st.dealer])}${st.streak ? ' 連' + st.streak : ''} · 已打 ${done ? MJ.progressLabel(done) : '0 局'}</span><span>${timeLabel(g)}</span></div>
       </section>
       <section class="seats" aria-label="四家">${seats}</section>
-      <div class="links">
-        <button type="button" class="link" data-act="seatOpen" data-mode="swap">換手</button>
-        <button type="button" class="link" data-act="seatOpen" data-mode="redraw">重新抽位子</button>
+      <div class="table-rules num">
+        <span>規則：<b>底 ${s.base}／台 ${s.perTai}</b></span>
+        <span>自摸加台：<b>${s.tsumoTai !== false ? '開' : '關'}</b></span>
+        <span>莊家台：<b>${s.dealerTai ? '開' : '關'}</b></span>
+        <span>流局連莊：<b>${s.drawStreak ? '加 1' : '不加'}</b></span>
+        ${g.location ? `<span>地點：<b>${esc(g.location)}</b></span>` : ''}
       </div>
     </div>
     ${side}
@@ -1622,7 +1653,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191739';
+const APP_VERSION = '202610191742';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
