@@ -254,7 +254,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191607"></script>
+<script src="logic.js?v=202610191611"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -592,7 +592,7 @@ function viewTable() {
       <h2>記一把</h2>
       ${handForm('entry', ui.entry, g, st, names)}
       <button type="button" class="primary" data-act="record"${hand ? '' : ' disabled'}>記錄這一把</button>
-      ${ui.flash ? `<div class="flash" role="status">${esc(ui.flash)}</div>` : ''}
+      ${ui.flash ? `<div class="flash" role="status">${esc(ui.flash)}${/^已記錄/.test(ui.flash) && g.hands.length ? ` <button type="button" class="link" data-act="edit" data-i="${g.hands.length - 1}" data-from="table">改這把</button>` : ''}</div>` : ''}
     </section>`;
   const done = MJ.totalRotation(g);
   return `<div class="play">
@@ -1163,11 +1163,13 @@ function doArmed(key) {
     const ng = clone(g); ng.endedAt = Date.now(); saveGame(ng);
     ui.viewId = g.id;
   } else if (key === 'delhand' && ui.edit) {
+    const back = ui.edit.fromTable;
     const vg = viewedGame();
     const ng = MJ.removeHand(withLineups(vg), ui.edit.index);
     saveGame(ng);
     ui.flash = `已刪除第 ${ui.edit.index + 1} 把`;
     ui.edit = null;
+    if (back) ui.tab = 'table';
   } else if (key.startsWith('del:')) {
     const id = key.slice(4);
     removeGame(id);
@@ -1294,8 +1296,10 @@ document.addEventListener('click', (ev) => {
     case 'edit': {
       const g = viewedGame();
       const i = Number(btn.dataset.i);
-      const h = g.hands[i];
-      ui.edit = { index: i, type: h.type, winner: h.type === 'draw' ? null : h.winner, loser: h.type === 'ron' ? h.loser : null, tai: h.tai || 0 };
+      const h = g && g.hands[i];
+      if (!h) return;
+      ui.tab = 'log';
+      ui.edit = { index: i, fromTable: btn.dataset.from === 'table', type: h.type, winner: h.type === 'draw' ? null : h.winner, loser: h.type === 'ron' ? h.loser : null, tai: h.tai || 0 };
       render();
       const el = document.getElementById('editPanel');
       if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -1305,15 +1309,20 @@ document.addEventListener('click', (ev) => {
       const g = viewedGame();
       const hand = handFrom(ui.edit);
       if (!g || !hand) return;
+      const back = ui.edit.fromTable;
       const ng = clone(g);
       hand.t = g.hands[ui.edit.index].t;
       ng.hands[ui.edit.index] = hand;
       saveGame(ng);
       ui.flash = `已修改第 ${ui.edit.index + 1} 把，後面都重算好了`;
       ui.edit = null;
+      if (back) ui.tab = 'table';
       break;
     }
-    case 'editCancel': ui.edit = null; break;
+    case 'editCancel':
+      if (ui.edit && ui.edit.fromTable) ui.tab = 'table';
+      ui.edit = null;
+      break;
     case 'seatOpen': {
       const r = MJ.replay(activeGame());
       ui.error = '';
@@ -1453,7 +1462,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191607';
+const APP_VERSION = '202610191611';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
