@@ -136,8 +136,9 @@ h3 { font-size: 0.95rem; margin: 0; }
 .stepper { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .stepper .round { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); font-size: 1.3rem; }
 .tai { font-family: var(--font-display); font-weight: 900; font-size: 1.9rem; min-width: 2.4ch; text-align: center; }
-.quick { display: flex; gap: 4px; flex-wrap: wrap; }
-.quick button { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; min-width: 38px; height: 36px; font-size: 0.9rem; }
+.quick { display: flex; gap: 5px; flex: 1 1 15rem; }
+.quick button { flex: 1; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; min-width: 40px; height: 40px; font-size: 0.95rem; font-weight: 500; padding: 0; }
+.quick button[aria-pressed="true"] { background: var(--felt); color: var(--felt-ink); border-color: var(--felt); font-weight: 700; }
 .preview { background: var(--bg); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: 0.9rem; }
 .pay { display: flex; justify-content: space-between; gap: 10px; }
 .pay small { color: var(--muted); display: block; font-size: 0.76rem; }
@@ -254,7 +255,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191649"></script>
+<script src="logic.js?v=202610191651"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -598,6 +599,8 @@ const selfExtra = (g, type) => (type === 'tsumo' && g && g.settings.tsumoTai !==
 // 記一把和修改某一把共用同一個面板，scope 決定改的是哪一份狀態
 function handForm(scope, e, g, st, names) {
   const self = selfExtra(g, e.type);
+  const curTai = e.tai + self;
+  const qNums = self ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5];
   const chips = (key, disabledIdx) => [0, 1, 2, 3].map((p) =>
     `<button type="button" class="chip" data-act="pick" data-scope="${scope}" data-key="${key}" data-p="${p}" aria-pressed="${e[key] === p}"${p === disabledIdx ? ' disabled' : ''}>${esc(names[p])}</button>`).join('');
   const typeBtn = (t, label) => `<button type="button" data-act="type" data-scope="${scope}" data-t="${t}" aria-pressed="${t === 'ron' ? e.type === 'ron' || e.type === 'triple' : e.type === t}">${label}</button>`;
@@ -609,19 +612,22 @@ function handForm(scope, e, g, st, names) {
     ${e.type === 'ron' ? `<div class="field"><div class="meta-row"><span class="label">誰放槍</span>${tripleLink}</div><div class="chips">${chips('loser', e.winner)}</div></div>` : ''}
     ${e.type === 'triple' ? `<div class="field"><div class="meta-row"><span class="label">誰放槍（一炮三響）</span>${tripleLink}</div><div class="chips">${chips('loser', -1)}</div></div>` : ''}`;
   const taiRows = e.type === 'draw' ? '' : e.type === 'triple'
-    ? (e.loser == null ? '' : [0, 1, 2, 3].filter((p) => p !== e.loser).map((p) => `<div class="field"><span class="label">${esc(names[p])} 台數（不含連莊，App 會自動加）</span>
+    ? (e.loser == null ? '' : [0, 1, 2, 3].filter((p) => p !== e.loser).map((p) => {
+        const pt = (e.tais && e.tais[p]) || 0;
+        return `<div class="field"><span class="label">${esc(names[p])} 台數（不含連莊，App 會自動加）</span>
       <div class="stepper">
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-p="${p}" data-d="-1" aria-label="${esc(names[p])}減一台">−</button>
-        <span class="tai num" aria-live="polite">${(e.tais && e.tais[p]) || 0}</span>
+        <span class="tai num" aria-live="polite">${pt}</span>
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-p="${p}" data-d="1" aria-label="${esc(names[p])}加一台">+</button>
-        <div class="quick">${[1, 2, 3, 4, 5, 8].map((n) => `<button type="button" data-act="taiset" data-scope="${scope}" data-p="${p}" data-n="${n}">${n}</button>`).join('')}</div>
-      </div></div>`).join(''))
+        <div class="quick">${[0, 1, 2, 3, 4, 5].map((n) => `<button type="button" data-act="taiset" data-scope="${scope}" data-p="${p}" data-n="${n}" aria-pressed="${pt === n}">${n}</button>`).join('')}</div>
+      </div></div>`;
+      }).join(''))
     : `<div class="field"><span class="label">台數（${self ? '含自摸 1 台，不含連莊' : '不含連莊'}，App 會自動加）</span>
       <div class="stepper">
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-d="-1" aria-label="減一台">−</button>
-        <span class="tai num" aria-live="polite">${e.tai + self}</span>
+        <span class="tai num" aria-live="polite">${curTai}</span>
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-d="1" aria-label="加一台">+</button>
-        <div class="quick">${[1, 2, 3, 4, 5, 8].map((n) => `<button type="button" data-act="taiset" data-scope="${scope}" data-n="${n}">${n}</button>`).join('')}</div>
+        <div class="quick">${qNums.map((n) => `<button type="button" data-act="taiset" data-scope="${scope}" data-n="${n}" aria-pressed="${curTai === n}">${n}</button>`).join('')}</div>
       </div></div>`;
   return `<div class="seg">${typeBtn('ron', '放槍')}${typeBtn('tsumo', '自摸')}${typeBtn('draw', '流局')}</div>
     ${pickers}
@@ -1552,7 +1558,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191649';
+const APP_VERSION = '202610191651';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
