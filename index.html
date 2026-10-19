@@ -267,7 +267,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .seat-foot > span { overflow: hidden; text-overflow: ellipsis; }
 .seat.pick-win .seat-foot { color: var(--pick-ink); }
 .state-actions { display: flex; gap: 6px; align-items: center; }
-.state-actions .link { min-height: 36px; padding: 3px 10px; font-size: 0.78rem; background: rgb(0 0 0 / 0.24); color: var(--felt-ink); border-color: rgb(255 255 255 / 0.28); border-radius: 999px; }
+.state-actions .link { min-height: 44px; padding: 4px 12px; font-size: 0.8rem; background: rgb(0 0 0 / 0.24); color: var(--felt-ink); border-color: rgb(255 255 255 / 0.28); border-radius: 999px; }
 @media (min-width: 900px) {
   .table-col { position: sticky; top: 76px; gap: 14px; }
   .seat { min-height: 112px; padding: 14px 16px; border-radius: 16px; gap: 4px; }
@@ -357,7 +357,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191748"></script>
+<script src="logic.js?v=202610191750"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -1686,7 +1686,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191748';
+const APP_VERSION = '202610191750';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
