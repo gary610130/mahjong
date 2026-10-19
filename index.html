@@ -70,11 +70,6 @@ button { cursor: pointer; }
 .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; min-width: 15rem; }
 .tabs button { border: 0; background: transparent; padding: 6px 16px; border-radius: 9px; font-weight: 500; color: var(--muted); }
 .tabs button[aria-current="page"] { background: var(--felt); color: var(--felt-ink); }
-@media (max-width: 520px) {
-  .bar-in { padding-block: 8px; gap: 8px; }
-  .brand { font-size: 1.15rem; }
-  .tabs { flex: 1 1 100%; }
-}
 
 .wrap { padding-block: 18px 40px; display: grid; gap: 18px; }
 .notice { background: var(--surface); border: 1px solid var(--red); color: var(--ink); border-radius: var(--radius); padding: 10px 14px; font-size: 0.9rem; }
@@ -236,6 +231,40 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .share .input { flex: 1; min-width: 0; font-size: 0.85rem; }
 .landing { display: grid; gap: 14px; max-width: 32rem; margin: 6vh auto 0; text-align: center; }
 .landing .primary { justify-self: center; padding-inline: 28px; }
+@media (max-width: 520px) {
+  .bar-in, .wrap { padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+  .bar-in { padding-block: 4px; gap: 6px; }
+  .brand { font-size: 1.05rem; gap: 6px; }
+  .tabs { flex: 1 1 10.5rem; min-width: 0; padding: 2px; }
+  .tabs button { min-height: 40px; padding: 4px 8px; font-size: 0.9rem; }
+  .wrap { padding-block: 6px 10px; gap: 8px; }
+  .play { gap: 6px; }
+  .table-col { gap: 4px; }
+  .state { padding: 5px 10px; border-radius: 11px; gap: 0; }
+  .state-round { font-size: 1.1rem; line-height: 1.2; }
+  .state-no, .state-sub { font-size: 0.76rem; line-height: 1.25; }
+  .seats { gap: 5px; }
+  .seat { padding: 5px 9px; border-radius: 10px; gap: 0; line-height: 1.25; }
+  .seat.dealer { padding: 4px 8px; }
+  .wind, .seat-name { font-size: 0.92rem; }
+  .seat-net { font-size: 1.25rem; line-height: 1.1; margin-top: 1px; }
+  .seat-mate, .seat-chips { font-size: 0.7rem; line-height: 1.2; }
+  .link { min-height: 40px; display: inline-flex; align-items: center; padding: 0 6px; }
+  .panel { padding: 8px 10px; border-radius: 14px; gap: 6px; }
+  .play > .panel[aria-label="記一把"] > h2 { display: none; }
+  .seg { padding: 2px; }
+  .seg button { min-height: 40px; padding: 4px; }
+  .meta-row { min-height: 40px; }
+  .field { gap: 3px; }
+  .stepper { gap: 5px; }
+  .stepper .round { width: 40px; height: 40px; font-size: 1.2rem; }
+  .tai { font-size: 1.5rem; line-height: 1; min-width: 2ch; }
+  .quick { gap: 4px; }
+  .quick button { min-width: 36px; height: 40px; }
+  .preview { padding: 6px 10px; gap: 3px; font-size: 0.85rem; line-height: 1.3; }
+  .pay small { font-size: 0.72rem; line-height: 1.2; }
+  .primary { min-height: 42px; padding: 8px 12px; font-size: 0.95rem; }
+}
 </style>
 </head>
 <body>
@@ -255,7 +284,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191653"></script>
+<script src="logic.js?v=202610191703"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -1567,7 +1596,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191653';
+const APP_VERSION = '202610191703';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
