@@ -89,9 +89,8 @@ button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-colo
 .brand { font-family: var(--font-display); font-weight: 900; font-size: 1.3rem; letter-spacing: 0.04em; display: flex; align-items: center; gap: 10px; }
 .sync { font-family: var(--font-body); font-weight: 600; font-size: 0.75rem; letter-spacing: 0.02em; color: var(--muted); background: var(--surface-sub); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
 .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--surface-sub); border: 1px solid var(--line); border-radius: 12px; padding: 3px; min-width: 16rem; }
-.tabs button { border: 2px solid transparent; background: transparent; min-height: 44px; padding: 6px 14px; border-radius: 9px; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
-.tabs button[aria-current="page"] { background: var(--pick-bg); color: var(--pick-ink); border-color: var(--ink); font-weight: 700; box-shadow: 0 1px 4px rgb(0 0 0 / 0.18); }
-.tabs button[aria-current="page"]::before { content: "●"; font-size: 0.65em; }
+.tabs button { border: 0; background: transparent; min-height: 44px; padding: 6px 14px; border-radius: 9px; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.tabs button[aria-current="page"] { background: var(--pick-bg); color: var(--pick-ink); font-weight: 700; }
 
 .wrap { padding-block: 18px 40px; display: grid; gap: 18px; }
 .notice { background: var(--surface-sub); border: 1.5px solid var(--red); color: var(--ink); border-radius: var(--radius); padding: 8px 12px; font-size: 0.86rem; font-weight: 500; }
@@ -116,19 +115,18 @@ h3 { font-size: 0.95rem; margin: 0; font-weight: 700; }
 
 /* 四家：固定照出牌順序繞一圈（左上→右上→右下→左下），點卡片選人 */
 .seats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "s0 s1" "s3 s2"; gap: 10px; }
-.seat { position: relative; background: var(--surface); border: 1.5px solid var(--line-strong); border-radius: 14px; padding: 10px 12px; text-align: left; display: grid; gap: 2px; min-width: 0; min-height: 76px; font: inherit; color: inherit; box-shadow: var(--shadow); }
-.seat.dealer { box-shadow: inset 0 4px 0 var(--dealer), var(--shadow); }
-.seat.pick-win { background: var(--pick-bg); color: var(--pick-ink); border: 2.5px solid var(--ink); box-shadow: 0 3px 10px rgb(0 0 0 / 0.22); }
-.seat.dealer.pick-win { box-shadow: inset 0 4px 0 var(--dealer), 0 3px 10px rgb(0 0 0 / 0.22); }
-.seat.pick-lose { background: color-mix(in srgb, var(--loss) 12%, var(--surface)); border: 2.5px solid var(--loss); }
-.seat.dealer.pick-lose { box-shadow: inset 0 4px 0 var(--dealer), var(--shadow); }
+.seat { position: relative; background: var(--surface); border: 2px solid var(--line); border-radius: 14px; padding: 10px 12px; text-align: left; display: grid; gap: 2px; min-width: 0; min-height: 76px; font: inherit; color: inherit; }
+.seat.pick-win { background: var(--pick-bg); color: var(--pick-ink); border-color: var(--pick-bg); }
+.seat.pick-lose { background: color-mix(in srgb, var(--loss) 10%, var(--surface)); border-color: var(--loss); }
 .seat:disabled { cursor: default; }
 .seat-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.wind { font-family: var(--font-display); font-weight: 900; font-size: 0.95rem; flex: none; width: 24px; height: 24px; border-radius: 6px; background: var(--surface-sub); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); }
-.seat.pick-win .wind { background: rgb(0 0 0 / 0.25); color: var(--pick-ink); border-color: transparent; }
+.wind { font-family: var(--font-display); font-weight: 900; font-size: 0.95rem; flex: none; color: var(--muted); }
+.seat.pick-win .wind { color: var(--pick-ink); opacity: 0.8; }
 .seat-name { font-weight: 700; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .seat-tags { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 4px; }
-.badge { flex: none; background: var(--dealer); color: var(--on-dealer); border-radius: 6px; padding: 1px 7px; font-size: 0.74rem; font-weight: 800; }
+/* 莊家用空心框，跟實心的胡／放槍標籤分開 */
+.badge { flex: none; background: transparent; color: var(--dealer); border: 1.5px solid currentColor; border-radius: 6px; padding: 0 6px; font-size: 0.74rem; font-weight: 800; }
+.seat.pick-win .badge { color: var(--pick-ink); }
 .tag { flex: none; border-radius: 6px; padding: 1px 7px; font-size: 0.75rem; font-weight: 800; background: var(--pick-ink); color: var(--pick-bg); }
 .tag::before { content: "✓ "; }
 .tag.lose { background: var(--loss); color: var(--on-loss); }
@@ -139,7 +137,8 @@ h3 { font-size: 0.95rem; margin: 0; font-weight: 700; }
 .seat.pick-win .seat-mate, .seat.pick-win .seat-chips, .seat.pick-win .seat-net { color: var(--pick-ink); }
 .zero { color: var(--muted); }
 .links { display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
-.link { border: 1px solid var(--line); background: var(--surface-sub); color: var(--ink); border-radius: 8px; font-size: 0.84rem; font-weight: 600; min-height: 44px; padding: 6px 12px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.link { border: 0; background: transparent; color: var(--muted); font-size: 0.85rem; font-weight: 600; min-height: 44px; padding: 4px 8px; display: inline-flex; align-items: center; justify-content: center; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
+.link:hover { color: var(--ink); }
 .meta-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.92rem; min-height: 44px; flex-wrap: wrap; }
 .picked { font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .picked .hint { font-weight: 500; }
@@ -147,23 +146,23 @@ h3 { font-size: 0.95rem; margin: 0; font-weight: 700; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 18px; display: grid; gap: 14px; min-width: 0; box-shadow: var(--shadow); }
 .panel.editing { border: 2px solid var(--red); }
 .field { display: grid; gap: 6px; }
-.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; background: var(--surface-sub); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
-.seg button { border: 2px solid transparent; background: transparent; min-height: 44px; padding: 6px 8px; border-radius: 9px; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
-.seg button[aria-pressed="true"] { background: var(--pick-bg); color: var(--pick-ink); border-color: var(--ink); font-weight: 800; box-shadow: 0 2px 5px rgb(0 0 0 / 0.18); }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--surface-sub); border-radius: 12px; padding: 4px; }
+.seg button { border: 0; background: transparent; min-height: 44px; padding: 6px 8px; border-radius: 9px; font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.seg button[aria-pressed="true"] { background: var(--pick-bg); color: var(--pick-ink); font-weight: 800; }
 .seg button[aria-pressed="true"]::before { content: "✓"; font-weight: 900; }
 .chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .chips.free { display: flex; flex-wrap: wrap; }
-.chip { border: 1.5px solid var(--line-strong); background: var(--surface-sub); border-radius: 10px; min-height: 44px; padding: 8px 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chip[aria-pressed="true"] { background: var(--pick-bg); color: var(--pick-ink); border: 2px solid var(--ink); font-weight: 800; }
+.chip { border: 0; background: var(--surface-sub); border-radius: 10px; min-height: 44px; padding: 8px 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--pick-bg); color: var(--pick-ink); font-weight: 800; }
 .chip[aria-pressed="true"]::before { content: "✓ "; }
 .chip:disabled { opacity: 0.35; cursor: default; }
 .stepper { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.stepper .round { width: 44px; height: 44px; border-radius: 10px; border: 1.5px solid var(--line-strong); background: var(--surface-sub); font-size: 1.35rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.stepper .round { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface-sub); font-size: 1.35rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .tai { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: 800; font-size: 1.75rem; min-width: 2.2ch; text-align: center; }
 .quick { display: flex; gap: 5px; flex: 1 1 13rem; }
-.quick button { flex: 1; border: 1.5px solid var(--line-strong); background: var(--surface-sub); border-radius: 10px; min-width: 40px; min-height: 44px; font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: 1rem; font-weight: 700; padding: 0; }
-.quick button[aria-pressed="true"] { background: var(--pick-bg); color: var(--pick-ink); border: 2px solid var(--ink); font-weight: 800; transform: translateY(-1px); box-shadow: 0 2px 4px rgb(0 0 0 / 0.16); }
-.preview { background: var(--surface-sub); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: grid; gap: 4px; font-size: 0.88rem; }
+.quick button { flex: 1; border: 0; background: var(--surface-sub); border-radius: 10px; min-width: 40px; min-height: 44px; font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: 1rem; font-weight: 700; padding: 0; color: var(--ink); }
+.quick button[aria-pressed="true"] { background: var(--pick-bg); color: var(--pick-ink); font-weight: 800; }
+.preview { padding: 2px 2px; display: grid; gap: 4px; font-size: 0.88rem; color: var(--ink); }
 .pay { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .pay small { color: var(--muted); display: block; font-size: 0.75rem; }
 .primary { border: 0; background: var(--red); color: var(--on-red); border-radius: 12px; min-height: 48px; padding: 10px 16px; font-weight: 800; font-size: 1.02rem; letter-spacing: 0.02em; box-shadow: 0 2px 6px rgb(0 0 0 / 0.16); }
@@ -275,8 +274,15 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .seat-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 0.74rem; color: var(--muted); overflow: hidden; white-space: nowrap; }
 .seat-foot > span { overflow: hidden; text-overflow: ellipsis; }
 .seat.pick-win .seat-foot { color: var(--pick-ink); }
-.state-actions { display: flex; gap: 6px; align-items: center; }
-.state-actions .link { min-height: 44px; padding: 4px 12px; font-size: 0.8rem; background: rgb(0 0 0 / 0.24); color: var(--felt-ink); border-color: rgb(255 255 255 / 0.28); border-radius: 999px; }
+.seat-links { margin-block: -6px; }
+.recent { list-style: none; margin: 0; padding: 0; display: grid; }
+.recent li + li { border-top: 1px solid var(--line); }
+.recent button { width: 100%; min-height: 44px; border: 0; background: transparent; color: var(--muted); font-size: 0.86rem; display: flex; align-items: center; gap: 10px; padding: 4px 4px; text-align: left; }
+.recent-no { flex: none; width: 2.2em; font-weight: 700; }
+.recent-what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.recent-edit { flex: none; font-size: 0.78rem; text-decoration: underline; text-underline-offset: 3px; }
+.recent li:nth-child(n+4) { display: none; }
+@media (min-width: 900px) { .recent li:nth-child(n+4) { display: list-item; } }
 @media (min-width: 900px) {
   .table-col { position: sticky; top: 76px; gap: 14px; }
   .seat { min-height: 112px; padding: 14px 16px; border-radius: 16px; gap: 4px; }
@@ -303,13 +309,11 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .state-round { font-size: 1.18rem; line-height: 1.15; }
   .state-no { font-size: 0.76rem; padding: 1px 8px; }
   .state-sub { font-size: 0.76rem; line-height: 1.2; }
-  .state-actions .link { min-height: 44px; padding: 4px 10px; font-size: 0.78rem; }
-  .seats { flex: 1; gap: 6px; grid-auto-rows: 1fr; }
-  .seat { min-height: 76px; height: 100%; padding: 8px 10px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 2px; line-height: 1.15; }
-  .wind { width: 21px; height: 21px; font-size: 0.84rem; border-radius: 5px; }
+  .seats { gap: 8px; }
+  .seat { padding: 9px 11px; border-radius: 12px; gap: 2px; line-height: 1.15; }
   .seat-name { font-size: 0.96rem; }
-  .badge, .tag { font-size: 0.72rem; padding: 1px 6px; }
-  .seat-net { font-size: clamp(24px, 3.5vh, 30px); line-height: 1.1; margin-block: auto; }
+  .badge, .tag { font-size: 0.72rem; }
+  .seat-net { font-size: 28px; line-height: 1.15; margin-block: 2px; }
   .seat-foot { font-size: 0.72rem; line-height: 1.15; width: 100%; }
   .panel { padding: 7px 10px 6px; border-radius: 14px; gap: 6px; }
   .play > .panel { flex: none; }
@@ -334,17 +338,17 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 @media (max-width: 520px) and (max-height: 700px) {
   .bar-in { padding-block: 3px; }
   .wrap { padding-top: 4px; gap: 4px; }
-  .notice { display: none; }
   .play { gap: 4px; }
   .table-col { gap: 4px; }
   .state { padding: 5px 9px; gap: 1px; }
   .state-round { font-size: 1.04rem; }
   .state-sub { font-size: 0.72rem; }
   .seats { gap: 4px; }
-  .seat { min-height: 68px; padding: 5px 8px; }
+  .seat { min-height: 68px; padding: 6px 9px; }
   .seat-net { font-size: 24px; line-height: 1.05; }
   .panel { padding: 6px 8px; gap: 4px; }
-  .field > .label { display: none; }
+  .play > .panel .field > .label { display: none; }
+  .recent { display: none; }
   .preview { padding: 4px 8px; font-size: 0.76rem; }
 }
 </style>
@@ -366,7 +370,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191900"></script>
+<script src="logic.js?v=202610191922"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -727,7 +731,7 @@ function handForm(scope, e, g, st, names) {
   const taiRows = e.type === 'draw' ? '' : e.type === 'triple'
     ? (e.loser == null ? '' : [0, 1, 2, 3].filter((p) => p !== e.loser).map((p) => {
         const pt = (e.tais && e.tais[p]) || 0;
-        return `<div class="field"><span class="label">${esc(names[p])} 台數（不含連莊，App 會自動加）</span>
+        return `<div class="field"><span class="label">${esc(names[p])} 的台數</span>
       <div class="stepper">
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-p="${p}" data-d="-1" aria-label="${esc(names[p])}減一台">−</button>
         <span class="tai num" aria-live="polite">${pt}</span>
@@ -735,7 +739,7 @@ function handForm(scope, e, g, st, names) {
         <div class="quick">${[0, 1, 2, 3, 4, 5].map((n) => `<button type="button" data-act="taiset" data-scope="${scope}" data-p="${p}" data-n="${n}" aria-pressed="${pt === n}">${n}</button>`).join('')}</div>
       </div></div>`;
       }).join(''))
-    : `<div class="field"><span class="label">台數（${self ? '含自摸 1 台，不含連莊' : '不含連莊'}，App 會自動加）</span>
+    : `<div class="field"><span class="label">台數${self ? '（含自摸）' : ''}，連莊會自動加</span>
       <div class="stepper">
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-d="-1" aria-label="減一台">−</button>
         <span class="tai num" aria-live="polite">${curTai}</span>
@@ -771,15 +775,16 @@ function viewTable() {
       <section class="state" aria-label="目前局面">
         <div class="state-top">
           <span class="state-round">${MJ.roundLabel(st.rotation).replace('風', '風 ')}</span>
-          <span class="state-actions">
-            <span class="state-no num">第 ${g.hands.length + 1} 把</span>
-            <button type="button" class="link" data-act="seatOpen" data-mode="swap">換手</button>
-            <button type="button" class="link" data-act="seatOpen" data-mode="redraw">重抽位</button>
-          </span>
+          <span class="state-no num">第 ${g.hands.length + 1} 把</span>
         </div>
         <div class="state-sub num"><span>莊 ${esc(names[st.dealer])}${st.streak ? ' 連' + st.streak : ''} · 已打 ${done ? MJ.progressLabel(done) : '0 局'}</span><span>${timeLabel(g)}</span></div>
       </section>
       <section class="seats" aria-label="四家">${seats}</section>
+      <div class="links seat-links">
+        <button type="button" class="link" data-act="seatOpen" data-mode="swap">換手</button>
+        <button type="button" class="link" data-act="seatOpen" data-mode="redraw">重新抽位子</button>
+      </div>
+      ${recentHtml(g, r)}
       <div class="table-rules num">
         <span>規則：<b>底 ${s.base}／台 ${s.perTai}</b></span>
         <span>自摸加台：<b>${s.tsumoTai !== false ? '開' : '關'}</b></span>
@@ -821,6 +826,15 @@ function seatPanelHtml(g, r) {
     ${err}
     <div class="row-actions"><button type="button" class="primary" data-act="seatSave">確定換位子</button>
       <button type="button" class="ghost" data-act="seatCancel">取消</button></div></section>`;
+}
+
+// 牌局頁下方列出最近幾把，記完可以順手確認，點一下就能改
+function recentHtml(g, r) {
+  if (!r.rows.length) return '';
+  const items = r.rows.slice(-5).reverse().map((row) =>
+    `<li><button type="button" data-act="edit" data-i="${row.index}" data-from="table">
+      <span class="recent-no num">${row.no}</span><span class="recent-what">${handText(row.names, row.hand, g)}</span><span class="recent-edit">修改</span></button></li>`).join('');
+  return `<ol class="recent" aria-label="最近幾把">${items}</ol>`;
 }
 
 function handText(names, h, g) {
@@ -1697,7 +1711,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191900';
+const APP_VERSION = '202610191922';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
