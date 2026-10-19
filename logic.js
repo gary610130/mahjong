@@ -13,22 +13,25 @@
     const pays = [];
     // 自摸固定多 1 台（舊牌局沒有這個設定時也當作開）
     const selfTai = hand.type === 'tsumo' && s.tsumoTai !== false ? 1 : 0;
-    const charge = (payer) => {
-      const extra = dealerExtra(st, hand.winner, payer, s);
-      const amt = s.base + (hand.tai + selfTai + extra) * s.perTai;
+    const charge = (payer, winner, tai) => {
+      const extra = dealerExtra(st, winner, payer, s);
+      const amt = s.base + (tai + selfTai + extra) * s.perTai;
       delta[payer] -= amt;
-      delta[hand.winner] += amt;
-      pays.push({ from: payer, to: hand.winner, amt, extra, selfTai });
+      delta[winner] += amt;
+      pays.push({ from: payer, to: winner, amt, tai, extra, selfTai });
     };
-    if (hand.type === 'ron') charge(hand.loser);
+    if (hand.type === 'ron') charge(hand.loser, hand.winner, hand.tai);
     if (hand.type === 'tsumo') {
-      for (let p = 0; p < 4; p++) if (p !== hand.winner) charge(p);
+      for (let p = 0; p < 4; p++) if (p !== hand.winner) charge(p, hand.winner, hand.tai);
+    }
+    if (hand.type === 'triple') {
+      for (let p = 0; p < 4; p++) if (p !== hand.loser) charge(hand.loser, p, (hand.tais && hand.tais[p]) || 0);
     }
 
     const next = { dealer: st.dealer, streak: st.streak, rotation: st.rotation };
     if (hand.type === 'draw') {
       if (s.drawStreak) next.streak += 1;
-    } else if (hand.winner === st.dealer) {
+    } else if (hand.type === 'triple' ? hand.loser !== st.dealer : hand.winner === st.dealer) {
       next.streak += 1;
     } else {
       next.dealer = (st.dealer + 1) % 4;
@@ -102,7 +105,16 @@
         if (r.delta[p] < o.maxLoss) o.maxLoss = r.delta[p];
         teams[lineup.seats[p].members[0]].net += r.delta[p];
       });
-      if (hand.type !== 'draw') {
+      if (hand.type === 'triple') {
+        for (let p = 0; p < 4; p++) {
+          if (p === hand.loser) continue;
+          const w = person(names[p]);
+          w.win += 1;
+          w.taiSum += (hand.tais && hand.tais[p]) || 0;
+          if (p === st.dealer && r.next.streak > w.maxStreak) w.maxStreak = r.next.streak;
+        }
+        person(names[hand.loser]).deal += 1;
+      } else if (hand.type !== 'draw') {
         const w = person(names[hand.winner]);
         w.win += 1;
         w.taiSum += hand.tai + r.selfTai;

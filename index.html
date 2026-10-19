@@ -254,12 +254,12 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191613"></script>
+<script src="logic.js?v=202610191620"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
 const $view = document.getElementById('view');
-const newEntry = (type) => ({ type: type || 'ron', winner: null, loser: null, tai: 0 });
+const newEntry = (type) => ({ type: type || 'ron', winner: null, loser: null, tai: 0, tais: [0, 0, 0, 0] });
 const ui = {
   tab: 'table', viewId: null, armed: null, flash: '', error: '', draft: null,
   entry: newEntry(), edit: null, seatPanel: null, filter: { loc: '', month: '' },
@@ -509,8 +509,8 @@ function seatHtml(r, p) {
   const teamNet = r.teams[seat.members[0]] ? r.teams[seat.members[0]].net : 0;
   const mates = seat.members.filter((n) => n !== name);
   const e = ui.entry;
-  const win = e.type !== 'draw' && e.winner === p;
-  const lose = e.type === 'ron' && e.loser === p;
+  const win = e.type === 'triple' ? e.loser != null && e.loser !== p : e.type !== 'draw' && e.winner === p;
+  const lose = (e.type === 'ron' || e.type === 'triple') && e.loser === p;
   const tag = win ? `<span class="tag">${e.type === 'tsumo' ? '自摸' : '胡'}</span>` : lose ? '<span class="tag lose">放槍</span>' : '';
   const badge = isDealer && !tag ? `<span class="badge">莊${st.streak ? ' 連' + st.streak : ''}</span>` : '';
   return `<button type="button" class="seat${isDealer ? ' dealer' : ''}${win ? ' pick-win' : ''}${lose ? ' pick-lose' : ''}" style="grid-area:s${p}"
@@ -527,6 +527,7 @@ function seatHtml(r, p) {
 function pickSeat(p) {
   const e = ui.entry;
   if (e.type === 'draw') return;
+  if (e.type === 'triple') { e.loser = e.loser === p ? null : p; return; }
   if (e.winner === p) { e.winner = null; e.loser = null; return; }
   if (e.type === 'tsumo' || e.winner == null) { e.winner = p; if (e.loser === p) e.loser = null; return; }
   e.loser = e.loser === p ? null : p;
@@ -534,6 +535,11 @@ function pickSeat(p) {
 
 function pickedLine(e, names) {
   if (e.type === 'draw') return '<div class="picked">流局<span class="hint">，直接記錄就好</span></div>';
+  if (e.type === 'triple') {
+    return e.loser == null
+      ? '<div class="picked hint">一炮三響：點上面的卡片選誰放槍</div>'
+      : `<div class="picked">${esc(names[e.loser])} 放槍（一炮三響）</div>`;
+  }
   if (e.winner == null) return `<div class="picked hint">點上面的卡片選誰${e.type === 'tsumo' ? '自摸' : '胡牌'}</div>`;
   if (e.type === 'tsumo') return `<div class="picked">${esc(names[e.winner])} 自摸</div>`;
   if (e.loser == null) return `<div class="picked">${esc(names[e.winner])} 胡<span class="hint">，再點放槍的人</span></div>`;
@@ -542,6 +548,11 @@ function pickedLine(e, names) {
 
 function handFrom(e) {
   if (e.type === 'draw') return { type: 'draw', tai: 0 };
+  if (e.type === 'triple') {
+    if (e.loser == null) return null;
+    const tais = [0, 1, 2, 3].map((p) => (p === e.loser ? 0 : (e.tais && e.tais[p]) || 0));
+    return { type: 'triple', loser: e.loser, tais };
+  }
   if (e.winner == null) return null;
   if (e.type === 'ron') {
     if (e.loser == null || e.loser === e.winner) return null;
@@ -558,8 +569,8 @@ function extraNote(g, st, x) {
   return parts.join('、');
 }
 
-function previewHtml(g, st, hand, names) {
-  if (!hand) return '<div class="preview hint">選好胡牌的人（放槍還要選放槍的人），這裡會先算出金額。</div>';
+function previewHtml(g, st, hand, names, curType) {
+  if (!hand) return `<div class="preview hint">${curType === 'triple' ? '選好誰放槍，這裡會分別算出付給三家的金額。' : '選好胡牌的人（放槍還要選放槍的人），這裡會先算出金額。'}</div>`;
   if (hand.type === 'draw') {
     const keep = g.settings.drawStreak ? `莊家續莊，變成連 ${st.streak + 1}` : '莊家續莊，連莊數不變';
     return `<div class="preview">流局，不用付錢。${keep}。</div>`;
@@ -567,12 +578,17 @@ function previewHtml(g, st, hand, names) {
   const res = MJ.settleHand(st, hand, g.settings);
   const lines = res.pays.map((x) => {
     const note = extraNote(g, st, x);
+    const tai = x.tai != null ? x.tai : hand.tai;
     return `<div class="pay"><div>${esc(names[x.from])} 付給 ${esc(names[x.to])}
-      <small>底 ${g.settings.base} + ${hand.tai + x.selfTai + x.extra} 台 × ${g.settings.perTai}${note ? '（含' + note + '）' : ''}</small></div>
+      <small>底 ${g.settings.base} + ${tai + x.selfTai + x.extra} 台 × ${g.settings.perTai}${note ? '（含' + note + '）' : ''}</small></div>
       <div class="num"><b>${x.amt.toLocaleString('en-US')}</b></div></div>`;
   }).join('');
   const total = res.pays.reduce((a, x) => a + x.amt, 0);
-  const sum = res.pays.length > 1 ? `<div class="pay"><div>${esc(names[hand.winner])} 共收</div><div class="num gain"><b>${total.toLocaleString('en-US')}</b></div></div>` : '';
+  const sum = res.pays.length > 1
+    ? hand.type === 'triple'
+      ? `<div class="pay"><div>${esc(names[hand.loser])} 共付</div><div class="num loss"><b>${total.toLocaleString('en-US')}</b></div></div>`
+      : `<div class="pay"><div>${esc(names[hand.winner])} 共收</div><div class="num gain"><b>${total.toLocaleString('en-US')}</b></div></div>`
+    : '';
   return `<div class="preview">${lines}${sum}</div>`;
 }
 
@@ -580,21 +596,33 @@ function previewHtml(g, st, hand, names) {
 function handForm(scope, e, g, st, names) {
   const chips = (key, disabledIdx) => [0, 1, 2, 3].map((p) =>
     `<button type="button" class="chip" data-act="pick" data-scope="${scope}" data-key="${key}" data-p="${p}" aria-pressed="${e[key] === p}"${p === disabledIdx ? ' disabled' : ''}>${esc(names[p])}</button>`).join('');
-  const typeBtn = (t, label) => `<button type="button" data-act="type" data-scope="${scope}" data-t="${t}" aria-pressed="${e.type === t}">${label}</button>`;
+  const typeBtn = (t, label) => `<button type="button" data-act="type" data-scope="${scope}" data-t="${t}" aria-pressed="${t === 'ron' ? e.type === 'ron' || e.type === 'triple' : e.type === t}">${label}</button>`;
+  const tripleLink = e.type === 'ron' || e.type === 'triple'
+    ? `<button type="button" class="link" data-act="triple" data-scope="${scope}">${e.type === 'triple' ? '改回單家胡' : '一炮三響'}</button>` : '';
   // 記一把時直接點牌桌上的卡片選人，不另外列名字按鈕
-  const pickers = scope === 'entry' ? pickedLine(e, names) : `
-    ${e.type === 'draw' ? '' : `<div class="field"><span class="label">誰胡牌</span><div class="chips">${chips('winner', -1)}</div></div>`}
-    ${e.type === 'ron' ? `<div class="field"><span class="label">誰放槍</span><div class="chips">${chips('loser', e.winner)}</div></div>` : ''}`;
-  return `<div class="seg">${typeBtn('ron', '放槍')}${typeBtn('tsumo', '自摸')}${typeBtn('draw', '流局')}</div>
-    ${pickers}
-    ${e.type === 'draw' ? '' : `<div class="field"><span class="label">台數（${g.settings.tsumoTai !== false ? '不含自摸和連莊' : '不含連莊'}，App 會自動加）</span>
+  const pickers = scope === 'entry' ? `<div class="meta-row">${pickedLine(e, names)}${tripleLink}</div>` : `
+    ${e.type === 'draw' || e.type === 'triple' ? '' : `<div class="field"><span class="label">誰胡牌</span><div class="chips">${chips('winner', -1)}</div></div>`}
+    ${e.type === 'ron' ? `<div class="field"><div class="meta-row"><span class="label">誰放槍</span>${tripleLink}</div><div class="chips">${chips('loser', e.winner)}</div></div>` : ''}
+    ${e.type === 'triple' ? `<div class="field"><div class="meta-row"><span class="label">誰放槍（一炮三響）</span>${tripleLink}</div><div class="chips">${chips('loser', -1)}</div></div>` : ''}`;
+  const taiRows = e.type === 'draw' ? '' : e.type === 'triple'
+    ? (e.loser == null ? '' : [0, 1, 2, 3].filter((p) => p !== e.loser).map((p) => `<div class="field"><span class="label">${esc(names[p])} 台數（不含連莊，App 會自動加）</span>
+      <div class="stepper">
+        <button type="button" class="round" data-act="tai" data-scope="${scope}" data-p="${p}" data-d="-1" aria-label="${esc(names[p])}減一台">−</button>
+        <span class="tai num" aria-live="polite">${(e.tais && e.tais[p]) || 0}</span>
+        <button type="button" class="round" data-act="tai" data-scope="${scope}" data-p="${p}" data-d="1" aria-label="${esc(names[p])}加一台">+</button>
+        <div class="quick">${[1, 2, 3, 4, 5, 8].map((n) => `<button type="button" data-act="taiset" data-scope="${scope}" data-p="${p}" data-n="${n}">${n}</button>`).join('')}</div>
+      </div></div>`).join(''))
+    : `<div class="field"><span class="label">台數（${g.settings.tsumoTai !== false ? '不含自摸和連莊' : '不含連莊'}，App 會自動加）</span>
       <div class="stepper">
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-d="-1" aria-label="減一台">−</button>
         <span class="tai num" aria-live="polite">${e.tai}</span>
         <button type="button" class="round" data-act="tai" data-scope="${scope}" data-d="1" aria-label="加一台">+</button>
         <div class="quick">${[1, 2, 3, 4, 5, 8].map((n) => `<button type="button" data-act="taiset" data-scope="${scope}" data-n="${n}">${n}</button>`).join('')}</div>
-      </div></div>`}
-    ${previewHtml(g, st, handFrom(e), names)}`;
+      </div></div>`;
+  return `<div class="seg">${typeBtn('ron', '放槍')}${typeBtn('tsumo', '自摸')}${typeBtn('draw', '流局')}</div>
+    ${pickers}
+    ${taiRows}
+    ${previewHtml(g, st, handFrom(e), names, e.type)}`;
 }
 
 function viewTable() {
@@ -663,6 +691,10 @@ function handText(names, h) {
   const n = (p) => esc(names[p]);
   if (h.type === 'draw') return '流局';
   if (h.type === 'tsumo') return `${n(h.winner)} 自摸 ${h.tai} 台`;
+  if (h.type === 'triple') {
+    const wins = [0, 1, 2, 3].filter((p) => p !== h.loser).map((p) => `${n(p)} ${(h.tais && h.tais[p]) || 0} 台`).join('、');
+    return `${n(h.loser)} 放槍一炮三響（${wins}）`;
+  }
   return `${n(h.winner)} 胡 ${n(h.loser)} ${h.tai} 台`;
 }
 
@@ -1125,7 +1157,7 @@ function buildCsv() {
     const s = String(v == null ? '' : v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
-  const kind = { ron: '放槍', tsumo: '自摸', draw: '流局' };
+  const kind = { ron: '放槍', tsumo: '自摸', draw: '流局', triple: '一炮三響' };
   const head = ['日期', '地點', '開打時間', '第幾把', '記錄時間', '圈局', '莊家', '連莊', '結果', '胡牌', '放槍', '台數'];
   for (let i = 0; i < 4; i++) head.push(W[i] + '位', W[i] + '位輸贏');
   const lines = [head];
@@ -1136,9 +1168,11 @@ function buildCsv() {
     r.rows.forEach((row) => {
       const h = row.hand;
       const nm = row.names;
+      const winCol = h.type === 'draw' ? '' : h.type === 'triple' ? [0, 1, 2, 3].filter((p) => p !== h.loser).map((p) => nm[p]).join('／') : nm[h.winner];
+      const taiCol = h.type === 'draw' ? '' : h.type === 'triple' ? [0, 1, 2, 3].filter((p) => p !== h.loser).map((p) => (h.tais && h.tais[p]) || 0).join('／') : h.tai;
       const line = [date, g.location || '', clock(startOf(g)), row.no, h.t ? clock(h.t) : '',
         MJ.roundLabel(row.before.rotation), nm[row.before.dealer], row.before.streak, kind[h.type],
-        h.type === 'draw' ? '' : nm[h.winner], h.type === 'ron' ? nm[h.loser] : '', h.type === 'draw' ? '' : h.tai];
+        winCol, h.type === 'ron' || h.type === 'triple' ? nm[h.loser] : '', taiCol];
       for (let p = 0; p < 4; p++) line.push(nm[p], row.delta[p]);
       lines.push(line);
     });
@@ -1267,7 +1301,13 @@ document.addEventListener('click', (ev) => {
       break;
     case 'type':
       e.type = btn.dataset.t;
-      if (e.type !== 'ron') e.loser = null;
+      if (e.type !== 'ron' && e.type !== 'triple') e.loser = null;
+      if (!e.tais) e.tais = [0, 0, 0, 0];
+      break;
+    case 'triple':
+      if (!e.tais) e.tais = [0, 0, 0, 0];
+      e.type = e.type === 'triple' ? 'ron' : 'triple';
+      if (e.type === 'triple') e.winner = null;
       break;
     case 'pick': {
       const p = Number(btn.dataset.p);
@@ -1298,8 +1338,24 @@ document.addEventListener('click', (ev) => {
       ui.openPerson = ui.openPerson === name ? null : name;
       break;
     }
-    case 'tai': e.tai = Math.max(0, e.tai + Number(btn.dataset.d)); break;
-    case 'taiset': e.tai = Number(btn.dataset.n); break;
+    case 'tai':
+      if (btn.dataset.p != null) {
+        const p = Number(btn.dataset.p);
+        if (!e.tais) e.tais = [0, 0, 0, 0];
+        e.tais[p] = Math.max(0, (e.tais[p] || 0) + Number(btn.dataset.d));
+      } else {
+        e.tai = Math.max(0, e.tai + Number(btn.dataset.d));
+      }
+      break;
+    case 'taiset':
+      if (btn.dataset.p != null) {
+        const p = Number(btn.dataset.p);
+        if (!e.tais) e.tais = [0, 0, 0, 0];
+        e.tais[p] = Number(btn.dataset.n);
+      } else {
+        e.tai = Number(btn.dataset.n);
+      }
+      break;
     case 'record': {
       const g = activeGame();
       const hand = handFrom(ui.entry);
@@ -1309,7 +1365,7 @@ document.addEventListener('click', (ev) => {
       ng.hands.push(hand);
       saveGame(ng);
       ui.flash = `已記錄第 ${ng.hands.length} 把`;
-      ui.entry = newEntry(ui.entry.type);
+      ui.entry = newEntry(ui.entry.type === 'triple' ? 'ron' : ui.entry.type);
       break;
     }
     case 'edit': {
@@ -1318,7 +1374,15 @@ document.addEventListener('click', (ev) => {
       const h = g && g.hands[i];
       if (!h) return;
       ui.tab = 'log';
-      ui.edit = { index: i, fromTable: btn.dataset.from === 'table', type: h.type, winner: h.type === 'draw' ? null : h.winner, loser: h.type === 'ron' ? h.loser : null, tai: h.tai || 0 };
+      ui.edit = {
+        index: i,
+        fromTable: btn.dataset.from === 'table',
+        type: h.type,
+        winner: h.type === 'ron' || h.type === 'tsumo' ? h.winner : null,
+        loser: h.type === 'ron' || h.type === 'triple' ? h.loser : null,
+        tai: h.tai || 0,
+        tais: h.tais ? h.tais.slice() : [0, 0, 0, 0],
+      };
       render();
       const el = document.getElementById('editPanel');
       if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -1481,7 +1545,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191613';
+const APP_VERSION = '202610191620';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
