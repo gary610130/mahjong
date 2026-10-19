@@ -31,6 +31,8 @@
   --gain: #0f693d;
   --loss: #b82921;
   --on-loss: #ffffff;
+  --dealer: #b45309;
+  --on-dealer: #ffffff;
   --pick-bg: #164a37;
   --pick-ink: #ffffff;
   --s1: #1b5eb8; --s2: #c4450c; --s3: #0b7558; --s4: #8f5800;
@@ -50,6 +52,7 @@
     --ink: #eef3f0; --muted: #9bb0a6; --line: #2a3c33; --line-strong: #466154;
     --red: #f06458; --on-red: #0b110e;
     --gain: #4ade80; --loss: #fb7185; --on-loss: #0b110e;
+    --dealer: #f59e0b; --on-dealer: #0b110e;
     --pick-bg: #34a876; --pick-ink: #07120d;
     --s1: #60a5fa; --s2: #fb923c; --s3: #34d399; --s4: #facc15;
     --s5: #f472b6; --s6: #a3e635; --s7: #a78bfa; --s8: #22d3ee; --s-other: #94a3b8;
@@ -63,6 +66,7 @@
   --ink: #eef3f0; --muted: #9bb0a6; --line: #2a3c33; --line-strong: #466154;
   --red: #f06458; --on-red: #0b110e;
   --gain: #4ade80; --loss: #fb7185; --on-loss: #0b110e;
+  --dealer: #f59e0b; --on-dealer: #0b110e;
   --pick-bg: #34a876; --pick-ink: #07120d;
   --s1: #60a5fa; --s2: #fb923c; --s3: #34d399; --s4: #facc15;
   --s5: #f472b6; --s6: #a3e635; --s7: #a78bfa; --s8: #22d3ee; --s-other: #94a3b8;
@@ -113,16 +117,19 @@ h3 { font-size: 0.95rem; margin: 0; font-weight: 700; }
 /* 四家：固定照出牌順序繞一圈（左上→右上→右下→左下），點卡片選人 */
 .seats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "s0 s1" "s3 s2"; gap: 10px; }
 .seat { position: relative; background: var(--surface); border: 1.5px solid var(--line-strong); border-radius: 14px; padding: 10px 12px; text-align: left; display: grid; gap: 2px; min-width: 0; min-height: 76px; font: inherit; color: inherit; box-shadow: var(--shadow); }
-.seat.dealer { border: 2px solid var(--red); padding: 9.5px 11.5px; }
+.seat.dealer { box-shadow: inset 0 4px 0 var(--dealer), var(--shadow); }
 .seat.pick-win { background: var(--pick-bg); color: var(--pick-ink); border: 2.5px solid var(--ink); box-shadow: 0 3px 10px rgb(0 0 0 / 0.22); }
-.seat.pick-lose { background: color-mix(in srgb, var(--loss) 12%, var(--surface)); border: 2.5px solid var(--loss); outline: 2px solid var(--loss); outline-offset: -4px; }
+.seat.dealer.pick-win { box-shadow: inset 0 4px 0 var(--dealer), 0 3px 10px rgb(0 0 0 / 0.22); }
+.seat.pick-lose { background: color-mix(in srgb, var(--loss) 12%, var(--surface)); border: 2.5px solid var(--loss); }
+.seat.dealer.pick-lose { box-shadow: inset 0 4px 0 var(--dealer), var(--shadow); }
 .seat:disabled { cursor: default; }
 .seat-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .wind { font-family: var(--font-display); font-weight: 900; font-size: 0.95rem; flex: none; width: 24px; height: 24px; border-radius: 6px; background: var(--surface-sub); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); }
 .seat.pick-win .wind { background: rgb(0 0 0 / 0.25); color: var(--pick-ink); border-color: transparent; }
 .seat-name { font-weight: 700; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.badge { margin-left: auto; flex: none; background: var(--red); color: var(--on-red); border-radius: 6px; padding: 1px 7px; font-size: 0.74rem; font-weight: 700; }
-.tag { margin-left: auto; flex: none; border-radius: 6px; padding: 1px 7px; font-size: 0.75rem; font-weight: 800; background: var(--pick-ink); color: var(--pick-bg); }
+.seat-tags { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 4px; }
+.badge { flex: none; background: var(--dealer); color: var(--on-dealer); border-radius: 6px; padding: 1px 7px; font-size: 0.74rem; font-weight: 800; }
+.tag { flex: none; border-radius: 6px; padding: 1px 7px; font-size: 0.75rem; font-weight: 800; background: var(--pick-ink); color: var(--pick-bg); }
 .tag::before { content: "✓ "; }
 .tag.lose { background: var(--loss); color: var(--on-loss); }
 .tag.lose::before { content: "✕ "; }
@@ -271,7 +278,6 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 @media (min-width: 900px) {
   .table-col { position: sticky; top: 76px; gap: 14px; }
   .seat { min-height: 112px; padding: 14px 16px; border-radius: 16px; gap: 4px; }
-  .seat.dealer { padding: 13.5px 15.5px; }
   .seat-net { font-size: 1.95rem; margin-block: 4px 2px; }
   .table-rules { display: flex; flex-wrap: wrap; gap: 8px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; font-size: 0.82rem; color: var(--muted); box-shadow: var(--shadow); }
   .table-rules b { color: var(--ink); }
@@ -298,7 +304,6 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .state-actions .link { min-height: 44px; padding: 4px 10px; font-size: 0.78rem; }
   .seats { flex: 1; gap: 6px; grid-auto-rows: 1fr; }
   .seat { min-height: 76px; height: 100%; padding: 8px 10px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 2px; line-height: 1.15; }
-  .seat.dealer { padding: 7.5px 9.5px; }
   .wind { width: 21px; height: 21px; font-size: 0.84rem; border-radius: 5px; }
   .seat-name { font-size: 0.96rem; }
   .badge, .tag { font-size: 0.72rem; padding: 1px 6px; }
@@ -335,7 +340,6 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .state-sub { font-size: 0.72rem; }
   .seats { gap: 4px; }
   .seat { min-height: 68px; padding: 5px 8px; }
-  .seat.dealer { padding: 4.5px 7.5px; }
   .seat-net { font-size: 24px; line-height: 1.05; }
   .panel { padding: 6px 8px; gap: 4px; }
   .field > .label { display: none; }
@@ -360,7 +364,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191855"></script>
+<script src="logic.js?v=202610191859"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -618,11 +622,12 @@ function seatHtml(r, p) {
   const win = e.type === 'triple' ? e.loser != null && e.loser !== p : e.type !== 'draw' && e.winner === p;
   const lose = (e.type === 'ron' || e.type === 'triple') && e.loser === p;
   const tag = win ? `<span class="tag">${e.type === 'tsumo' ? '自摸' : '胡'}</span>` : lose ? '<span class="tag lose">放槍</span>' : '';
-  const badge = isDealer && !tag ? `<span class="badge">莊${st.streak ? ' 連' + st.streak : ''}</span>` : '';
+  const badge = isDealer ? `<span class="badge">莊${st.streak ? ' 連' + st.streak : ''}</span>` : '';
+  const tagsHtml = badge || tag ? `<span class="seat-tags">${badge}${tag}</span>` : '';
   const mateInfo = mates.length ? `<span>隊友 ${mates.map((n) => `${esc(n)}(${money(r.people[n].net) || '0'})`).join('·')}</span>` : '<span></span>';
   return `<button type="button" class="seat${isDealer ? ' dealer' : ''}${win ? ' pick-win' : ''}${lose ? ' pick-lose' : ''}" style="grid-area:s${p}"
       data-act="seatPick" data-p="${p}"${e.type === 'draw' || ui.seatPanel ? ' disabled' : ''} aria-pressed="${win || lose}">
-    <span class="seat-top"><span class="wind">${W[p]}</span><span class="seat-name">${esc(name)}</span>${tag || badge}</span>
+    <span class="seat-top"><span class="wind">${W[p]}</span><span class="seat-name">${esc(name)}</span>${tagsHtml}</span>
     <span class="seat-net num ${teamNet ? cls(teamNet) : 'zero'}">${teamNet ? money(teamNet) : '±0'}</span>
     <span class="seat-foot num">${mateInfo}<span>籌 ${(1000 + teamNet).toLocaleString('en-US')}</span></span>
   </button>`;
@@ -1689,7 +1694,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191855';
+const APP_VERSION = '202610191859';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
