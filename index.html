@@ -122,7 +122,7 @@ h3 { font-size: 0.95rem; margin: 0; font-weight: 700; }
 .seat-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .wind { font-family: var(--font-display); font-weight: 900; font-size: 0.95rem; flex: none; color: var(--muted); }
 .seat.pick-win .wind { color: var(--pick-ink); opacity: 0.8; }
-.seat-name { font-weight: 700; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.seat-name { font-weight: 700; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 2.5em; }
 .seat-tags { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 4px; }
 /* 莊家用空心框，跟實心的胡／放槍標籤分開 */
 .badge { flex: none; background: transparent; color: var(--dealer); border: 1.5px solid currentColor; border-radius: 6px; padding: 0 6px; font-size: 0.74rem; font-weight: 800; }
@@ -276,13 +276,17 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .seat.pick-win .seat-foot { color: var(--pick-ink); }
 .seat-links { margin-block: -6px; }
 .recent { list-style: none; margin: 0; padding: 0; display: grid; }
-.recent li + li { border-top: 1px solid var(--line); }
+.recent li + li:not(.recent-pad + li) { border-top: 1px solid var(--line); }
+.recent-pad { height: 0; }
 .recent button { width: 100%; min-height: 44px; border: 0; background: transparent; color: var(--muted); font-size: 0.86rem; display: flex; align-items: center; gap: 10px; padding: 4px 4px; text-align: left; }
 .recent-no { flex: none; width: 2.2em; font-weight: 700; }
 .recent-what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
 .recent-edit { flex: none; font-size: 0.78rem; text-decoration: underline; text-underline-offset: 3px; }
-.recent li:nth-child(n+4) { display: none; }
-@media (min-width: 900px) { .recent li:nth-child(n+4) { display: list-item; } }
+/* 手機上只放得下幾把就顯示幾把：放不下的整列擠到第二欄，被裁掉看不到 */
+@media (max-width: 520px) {
+  .recent { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start; overflow: hidden; }
+  .recent li { width: 100%; flex: none; }
+}
 @media (min-width: 900px) {
   .table-col { position: sticky; top: 76px; gap: 14px; }
   .seat { min-height: 112px; padding: 14px 16px; border-radius: 16px; gap: 4px; }
@@ -312,7 +316,8 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .seats { gap: 8px; }
   .seat { padding: 9px 11px; border-radius: 12px; gap: 2px; line-height: 1.15; }
   .seat-name { font-size: 0.96rem; }
-  .badge, .tag { font-size: 0.72rem; }
+  .badge, .tag { font-size: 0.72rem; padding-inline: 5px; }
+  .seat-tags { gap: 3px; }
   .seat-net { font-size: 28px; line-height: 1.15; margin-block: 2px; }
   .seat-foot { font-size: 0.72rem; line-height: 1.15; width: 100%; }
   .panel { padding: 7px 10px 6px; border-radius: 14px; gap: 6px; }
@@ -348,7 +353,6 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
   .seat-net { font-size: 24px; line-height: 1.05; }
   .panel { padding: 6px 8px; gap: 4px; }
   .play > .panel .field > .label { display: none; }
-  .recent { display: none; }
   .preview { padding: 4px 8px; font-size: 0.76rem; }
 }
 </style>
@@ -370,7 +374,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191922"></script>
+<script src="logic.js?v=202610191924"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -628,7 +632,8 @@ function seatHtml(r, p) {
   const win = e.type === 'triple' ? e.loser != null && e.loser !== p : e.type !== 'draw' && e.winner === p;
   const lose = (e.type === 'ron' || e.type === 'triple') && e.loser === p;
   const tag = win ? `<span class="tag">${e.type === 'tsumo' ? '自摸' : '胡'}</span>` : lose ? '<span class="tag lose">放槍</span>' : '';
-  const badge = isDealer ? `<span class="badge">莊${st.streak ? ' 連' + st.streak : ''}</span>` : '';
+  // 連莊數已經寫在上面的局況列，卡片上只標「莊」，留位置給名字
+  const badge = isDealer ? `<span class="badge" title="${st.streak ? '連' + st.streak : ''}">莊</span>` : '';
   const tagsHtml = badge || tag ? `<span class="seat-tags">${badge}${tag}</span>` : '';
   const mateInfo = mates.length ? `<span>隊友 ${mates.map((n) => `${esc(n)}(${money(r.people[n].net) || '0'})`).join('·')}</span>` : '<span></span>';
   return `<button type="button" class="seat${isDealer ? ' dealer' : ''}${win ? ' pick-win' : ''}${lose ? ' pick-lose' : ''}" style="grid-area:s${p}"
@@ -686,7 +691,7 @@ function extraNote(g, st, x) {
 }
 
 function previewHtml(g, st, hand, names, curType) {
-  if (!hand) return `<div class="preview hint">${curType === 'triple' ? '選好誰放槍，這裡會分別算出付給三家的金額。' : '選好胡牌的人（放槍還要選放槍的人），這裡會先算出金額。'}</div>`;
+  if (!hand) return `<div class="preview hint">${curType === 'triple' ? '選好誰放槍，這裡會算出付給三家的金額。' : '選好人之後，這裡會先算出金額。'}</div>`;
   if (hand.type === 'draw') {
     const keep = g.settings.drawStreak ? `莊家續莊，變成連 ${st.streak + 1}` : '莊家續莊，連莊數不變';
     return `<div class="preview">流局，不用付錢。${keep}。</div>`;
@@ -834,7 +839,8 @@ function recentHtml(g, r) {
   const items = r.rows.slice(-5).reverse().map((row) =>
     `<li><button type="button" data-act="edit" data-i="${row.index}" data-from="table">
       <span class="recent-no num">${row.no}</span><span class="recent-what">${handText(row.names, row.hand, g)}</span><span class="recent-edit">修改</span></button></li>`).join('');
-  return `<ol class="recent" aria-label="最近幾把">${items}</ol>`;
+  // 開頭放一個零高度的項目，連第一把都放不下時它也會整列換到看不到的第二欄
+  return `<ol class="recent" aria-label="最近幾把"><li class="recent-pad" aria-hidden="true"></li>${items}</ol>`;
 }
 
 function handText(names, h, g) {
@@ -1711,7 +1717,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191922';
+const APP_VERSION = '202610191924';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
