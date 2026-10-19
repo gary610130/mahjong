@@ -168,7 +168,7 @@ h3 { font-size: 0.95rem; margin: 0; font-weight: 700; }
 .primary { border: 0; background: var(--red); color: var(--on-red); border-radius: 12px; min-height: 48px; padding: 10px 16px; font-weight: 800; font-size: 1.02rem; letter-spacing: 0.02em; box-shadow: 0 2px 6px rgb(0 0 0 / 0.16); }
 .primary:disabled { opacity: 0.38; cursor: default; box-shadow: none; }
 .ghost { border: 1.5px solid var(--line-strong); background: var(--surface-sub); border-radius: 10px; min-height: 44px; padding: 8px 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
-.ghost.small { min-height: 44px; padding: 6px 12px; font-size: 0.84rem; }
+.ghost.small { min-height: 44px; padding: 6px 12px; font-size: 0.84rem; border-color: var(--line); background: transparent; }
 .ghost.warn { color: var(--loss); border-color: var(--loss); background: transparent; }
 .ghost.armed { background: var(--loss); color: var(--on-loss); border-color: var(--loss); font-weight: 800; }
 .row-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -188,19 +188,20 @@ table.grid { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .hands { list-style: none; margin: 0; padding: 0; display: grid; }
 .hand { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); align-items: center; }
 .hand.current { background: var(--surface-sub); border-radius: 10px; padding-inline: 8px; }
-.hand-no { font-family: var(--font-num); font-weight: 800; color: var(--muted); background: var(--surface-sub); border: 1px solid var(--line); border-radius: 8px; height: 32px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; }
+.hand-no { font-family: var(--font-num); font-weight: 800; color: var(--muted); font-size: 0.95rem; text-align: center; }
 .hand-what { font-weight: 700; }
 .hand-meta { font-size: 0.78rem; color: var(--muted); }
 .hand-deltas { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 5px 10px; font-size: 0.84rem; margin-top: 2px; }
-.hand-deltas > span { background: var(--surface-sub); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; }
+.hand-deltas > span { color: var(--muted); }
 .marker { padding: 8px 10px; margin-block: 4px; background: var(--surface-sub); border-left: 3px solid var(--felt); border-radius: 6px; font-size: 0.82rem; color: var(--ink); font-weight: 600; }
 
 .board { display: grid; gap: 4px; }
-.lead-item { border: 1px solid var(--line); border-radius: 12px; background: var(--surface-sub); padding-inline: 10px; }
+.lead-item { border: 1px solid transparent; border-radius: 12px; padding-inline: 10px; }
+.lead-item + .lead-item:not(.open) { border-top-color: var(--line); border-radius: 0; }
 .lead-item.open { border-color: var(--felt); background: var(--surface); box-shadow: var(--shadow); }
 .lead { width: 100%; display: grid; grid-template-columns: 1.6rem minmax(3.2rem, 5rem) minmax(0, 1fr) 5.2rem; align-items: center; gap: 10px;
   min-height: 48px; padding: 8px 0; border: 0; background: transparent; text-align: left; font-size: 0.95rem; }
-.lead-rank { color: var(--muted); font-size: 0.82rem; font-weight: 800; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; }
+.lead-rank { color: var(--muted); font-size: 0.85rem; font-weight: 800; text-align: center; }
 .lead-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .spark { width: 100%; height: 36px; display: block; }
 .spark-zero { stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 2 2; vector-effect: non-scaling-stroke; }
@@ -248,7 +249,8 @@ table.heat { border-collapse: separate; border-spacing: 3px; font-size: 0.88rem;
 /* iOS 的時間欄位有自己的最小寬度，要拿掉原生外觀才不會撐出畫面 */
 input[type="time"].input { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; display: block; min-height: 46px; text-align: left; }
 .names { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 12px; }
-.seat-form { display: grid; gap: 6px; background: var(--surface-sub); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.seat-form { display: grid; grid-template-columns: 1.6em minmax(0, 1.3fr) minmax(0, 1fr); gap: 8px; align-items: center; }
+.seat-form-wind { font-family: var(--font-display); font-weight: 900; font-size: 1.1rem; color: var(--muted); text-align: center; }
 .input { border: 1.5px solid var(--line-strong); background: var(--surface); border-radius: 10px; min-height: 44px; padding: 8px 12px; width: 100%; }
 .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 10px; }
 .toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 0.92rem; background: var(--surface-sub); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
@@ -266,7 +268,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 .table-rules { display: none; }
 .settle-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 @media (min-width: 640px) { .settle-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.settle-card { background: var(--surface-sub); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; align-content: space-between; min-width: 0; }
+.settle-card { background: var(--surface-sub); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; align-content: space-between; min-width: 0; }
 .settle-name { font-weight: 700; font-size: 0.92rem; line-height: 1.35; word-break: keep-all; overflow-wrap: normal; }
 .settle-name > span { display: inline-block; white-space: nowrap; }
 .settle-card b { font-size: 1.25rem; font-weight: 800; line-height: 1.2; }
@@ -374,7 +376,7 @@ input[type="time"].input { -webkit-appearance: none; appearance: none; min-width
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="logic.js?v=202610191924"></script>
+<script src="logic.js?v=202610191926"></script>
 <script>
 const W = MJ.WINDS;
 const LS_KEY = 'mj-ledger-games';
@@ -1278,9 +1280,9 @@ function viewSetup() {
   }
   const d = ui.draft;
   const seatForms = d.names.map((n, i) => `<div class="seat-form">
-      <label class="field"><span class="label">${W[i]}位</span>
-        <input class="input" id="name${i}" data-draft="name" data-i="${i}" list="peopleList" value="${esc(n)}" placeholder="名字" autocomplete="off"></label>
-      <input class="input" id="mate${i}" data-draft="mate" data-i="${i}" list="peopleList" value="${esc(d.mates[i])}" placeholder="隊友（選填，會換手的話）" autocomplete="off" aria-label="${W[i]}位的隊友">
+      <span class="seat-form-wind" aria-hidden="true">${W[i]}</span>
+      <input class="input" id="name${i}" data-draft="name" data-i="${i}" list="peopleList" value="${esc(n)}" placeholder="名字" autocomplete="off" aria-label="${W[i]}位的名字">
+      <input class="input" id="mate${i}" data-draft="mate" data-i="${i}" list="peopleList" value="${esc(d.mates[i])}" placeholder="隊友（選填）" autocomplete="off" aria-label="${W[i]}位的隊友（會換手的話）">
     </div>`).join('');
   const opts = [0, 1, 2, 3].map((i) => `<option value="${i}"${d.startDealer === i ? ' selected' : ''}>${W[i]}位${d.names[i] ? '（' + esc(d.names[i]) + '）' : ''}</option>`).join('');
   return `<section class="panel"><h2>開一場新的</h2>
@@ -1289,7 +1291,7 @@ function viewSetup() {
         <button type="button" class="link" data-act="fillLast">帶入上一場的座位</button>
         <button type="button" class="link" data-act="clearNames">清空名字</button></div>` : ''}
       <div class="names">${seatForms}</div>${peopleList()}
-      <p class="hint">照抽到的風位填，東、南、西、北就是出牌順序。打字時會跳出以前用過的名字可以直接點。組隊的話，先上場的人填在名字，隊友填在下面；錢照位子一起算，個人戰績另外記。</p>
+      <p class="hint">照抽到的風位填，東、南、西、北就是出牌順序。打字時會跳出以前用過的名字可以直接點。組隊的話，先上場的人填在名字，隊友填在右邊；錢照位子一起算，個人戰績另外記。</p>
       <label class="field"><span class="label">開打地點（選填）</span>
         <input class="input" id="location" data-draft="location" list="locList" value="${esc(d.location)}" placeholder="例如：阿明家" autocomplete="off"></label>
       ${locList()}
@@ -1299,7 +1301,7 @@ function viewSetup() {
         <label class="field"><span class="label">每台（元）</span><input class="input num" id="perTai" data-draft="perTai" type="number" inputmode="numeric" min="0" value="${d.perTai}"></label>
       </div>
       <label class="toggle"><input type="checkbox" id="tsumoTai" data-draft="tsumoTai"${d.tsumoTai ? ' checked' : ''}>
-        <span>自摸自動加 1 台<br><span class="hint">打開後，台數只要填牌面的台，自摸那 1 台 App 會自己加</span></span></label>
+        <span>自摸自動加 1 台<br><span class="hint">打開後，自摸至少算 1 台，記帳時台數會從 1 開始</span></span></label>
       <label class="toggle"><input type="checkbox" id="dealerTai" data-draft="dealerTai"${d.dealerTai ? ' checked' : ''}>
         <span>莊家台：跟莊家有關的那筆帳多算 1 台<br><span class="hint">莊家胡、莊家放槍、別人自摸時莊家要付的那份</span></span></label>
       <label class="toggle"><input type="checkbox" id="drawStreak" data-draft="drawStreak"${d.drawStreak ? ' checked' : ''}>
@@ -1717,7 +1719,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 // 加到主畫面的 App 會一直用舊的網頁，打開或切回來時看一下網站上的版本，不同就重新載入
-const APP_VERSION = '202610191924';
+const APP_VERSION = '202610191926';
 async function checkUpdate() {
   try {
     const res = await fetch('./?check=' + Date.now(), { cache: 'no-store' });
